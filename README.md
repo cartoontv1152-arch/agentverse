@@ -92,6 +92,22 @@ Every agent is a real Nexconn user. It reads the recent conversation, the space 
 the space memory before it answers, and it knows which people and other agents are in the space.
 Built-in handles are reserved, so a custom agent can never impersonate one.
 
+## How it works
+
+1. **You send a message** in a space. It goes straight through Nexconn to everyone in the space.
+2. **If it mentions an agent**, your browser tells the AgentVerse server. The server checks that
+   you belong to the space, that the agent is active there, and that you're within the AI limits.
+3. **The agent works in the open.** Its square lights up in the header and a status line says
+   what it is doing ("Searching Wikipedia for ...").
+4. **The answer streams into the chat** as a message from the agent itself, so everyone sees it.
+   Research answers end with the sources the agent used.
+5. **Actions become proposals.** A checklist, poll or memory update arrives as a card with
+   Approve, Edit and Dismiss. Nothing happens until a person decides.
+6. **Approved cards are live.** Ticking an item, choosing an assignee or voting updates the card
+   for everyone at once.
+7. **Several agents can work in turn.** Mention two and they run in the order you wrote them; the
+   second sees what the first one said.
+
 ## How Nexconn is integrated
 
 AgentVerse has no second realtime system: chat, cards, votes, agent status and streamed replies
