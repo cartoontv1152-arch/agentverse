@@ -367,8 +367,8 @@ npm run e2e:cleanup                                                         # re
 
 **Unit tests** (`test/core-logic.test.ts`, Vitest) cover message merging, de-duplication and
 ordering, channel previews (Markdown, citations and streamed replies), names from emails, the
-sources footer, stream summary parsing, the citation registry, URL and redirect safety, and mention
-resolution.
+sources footer, stream summary parsing, the citation registry, URL and redirect safety, mention
+resolution, and agent hues and icons.
 
 **Sign-up in end-to-end tests** uses Clerk's test mode: addresses like
 `e2e.asha.x1y2+clerk_test@example.com` are verified with the code `424242` and no email is sent.
