@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
 import { Button } from "./button";
 
@@ -21,6 +21,7 @@ export function Dialog({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -34,23 +35,23 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      aria-labelledby="dialog-title"
-      className={`m-auto w-[calc(100%-2rem)] ${wide ? "max-w-2xl" : "max-w-md"} rounded-panel border border-ink/15 bg-paper p-0 text-ink shadow-[0_24px_64px_-24px_rgba(27,36,32,0.45)] backdrop:bg-ink/35`}
+      aria-labelledby={titleId}
+      className={`m-auto w-[calc(100%-2rem)] ${wide ? "max-w-2xl" : "max-w-md"} rounded-sheet border border-ink/10 bg-surface p-0 text-ink shadow-[0_2px_6px_rgb(22_26_44/0.06),0_40px_90px_-30px_rgb(22_26_44/0.55)] backdrop:bg-ink/40 backdrop:backdrop-blur-[2px]`}
     >
       {open ? (
         <div className="flex max-h-[85vh] flex-col">
-          <div className="flex items-start justify-between gap-4 border-b border-ink/10 px-5 py-4">
+          <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
             <div>
-              <h2 id="dialog-title" className="text-lg font-semibold">
+              <h2 id={titleId} className="text-xl font-semibold tracking-[-0.01em]">
                 {title}
               </h2>
-              {description ? <p className="mt-0.5 text-sm text-ink/60">{description}</p> : null}
+              {description ? <p className="mt-1 text-sm text-ink/60">{description}</p> : null}
             </div>
-            <button type="button" aria-label="Close" onClick={onClose} className="rounded-control p-1 text-ink/55 hover:bg-ink/6 hover:text-ink">
+            <button type="button" aria-label="Close" onClick={onClose} className="-mr-1.5 rounded-control p-1.5 text-ink/50 transition-colors hover:bg-ink/6 hover:text-ink">
               <X className="size-5" />
             </button>
           </div>
-          <div className="overflow-y-auto px-5 py-4">{children}</div>
+          <div className="overflow-y-auto px-6 pb-6 pt-3">{children}</div>
         </div>
       ) : null}
     </dialog>
@@ -78,8 +79,8 @@ export function ConfirmDialog({
 }) {
   return (
     <Dialog open={open} onClose={onClose} title={title}>
-      <p className="text-sm text-ink/75">{description}</p>
-      <div className="mt-5 flex justify-end gap-2">
+      <p className="text-ink/70">{description}</p>
+      <div className="mt-6 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>

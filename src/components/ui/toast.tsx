@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 
 type Tone = "info" | "error" | "success";
 interface Toast {
@@ -20,7 +20,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     (message: string, tone: Tone = "info", detail?: string | null) => {
       const id = Date.now() + Math.random();
       setToasts((t) => [...t.slice(-3), { id, tone, message, detail }]);
-      setTimeout(() => dismiss(id), tone === "error" ? 7000 : 4000);
+      setTimeout(() => dismiss(id), tone === "error" ? 7000 : 4200);
     },
     [dismiss],
   );
@@ -28,21 +28,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 sm:bottom-6">
         {toasts.map((t) => (
           <div
             key={t.id}
             role={t.tone === "error" ? "alert" : "status"}
-            className={`pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-panel border px-4 py-3 text-sm shadow-[0_6px_24px_-12px_rgba(27,36,32,0.35)] ${
-              t.tone === "error" ? "border-signal/35 bg-surface text-ink" : "border-ink/15 bg-ink text-paper"
-            }`}
+            className="pointer-events-auto flex w-full max-w-md animate-rise items-start gap-3 rounded-panel bg-ink px-4 py-3 text-sm text-paper shadow-[0_18px_40px_-16px_rgb(22_26_44/0.6)]"
           >
-            {t.tone === "error" ? <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-signal" /> : null}
+            {t.tone === "error" ? (
+              <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-[#ff8a80]" />
+            ) : t.tone === "success" ? (
+              <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0 text-[#6ee7b7]" />
+            ) : null}
             <div className="min-w-0 flex-1">
               <p className="font-medium">{t.message}</p>
-              {t.detail ? <p className={t.tone === "error" ? "text-ink/65" : "text-paper/70"}>{t.detail}</p> : null}
+              {t.detail ? <p className="mt-0.5 text-paper/65">{t.detail}</p> : null}
             </div>
-            <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="opacity-60 hover:opacity-100">
+            <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="-mr-1 rounded p-0.5 text-paper/50 transition-colors hover:text-paper">
               <X className="size-4" />
             </button>
           </div>
