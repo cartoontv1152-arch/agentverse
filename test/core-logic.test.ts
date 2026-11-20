@@ -55,6 +55,15 @@ describe("message previews", () => {
     expect(messagePreview({ type: "AGV:Tasks", content: { title: "Trip" } })).toBe("Checklist: Trip");
     expect(messagePreview({ type: "RC:StreamMsg", content: { content: "x" }, streamText: "full" })).toBe("full");
   });
+
+  it("falls back for a stream whose first chunk is empty", () => {
+    expect(messagePreview({ type: "RC:StreamMsg", content: { content: "" } })).toBe("Sent a reply");
+  });
+
+  it("turns Markdown answers into one plain line without citations or sources", () => {
+    const text = "**Tram 28** loops through\n\nAlfama [1].\n\n**Sources**\n1. [Trams in Lisbon](https://en.wikipedia.org/wiki/Trams_in_Lisbon)";
+    expect(messagePreview({ type: "RC:TxtMsg", content: { text } })).toBe("Tram 28 loops through Alfama.");
+  });
 });
 
 describe("sources footer", () => {

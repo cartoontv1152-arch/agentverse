@@ -45,14 +45,19 @@ export function Composer({ placeholder, mentionables, disabled, disabledReason, 
     ref.current?.focus();
   }, [autoFocusKey]);
 
+  // A suggested prompt replaces the text (adjusting state during render, not in an effect).
+  const [appliedDraft, setAppliedDraft] = useState(draft);
+  if (draft !== appliedDraft) {
+    setAppliedDraft(draft);
+    if (draft) {
+      setText(draft.text);
+      setCaret(draft.text.length);
+    }
+  }
   useEffect(() => {
     if (!draft) return;
-    setText(draft.text);
-    setCaret(draft.text.length);
-    requestAnimationFrame(() => {
-      ref.current?.focus();
-      ref.current?.setSelectionRange(draft.text.length, draft.text.length);
-    });
+    ref.current?.focus();
+    ref.current?.setSelectionRange(draft.text.length, draft.text.length);
   }, [draft]);
 
   useEffect(() => {
