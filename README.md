@@ -359,12 +359,22 @@ columns only in a later release once no running code reads them.
 ## Tests
 
 ```bash
-npm run typecheck && npm run lint
-npm test                                                                    # unit tests (Vitest)
+npm run check                                                               # typecheck, lint, unit tests
 npx playwright test                                                         # end to end, against local dev
 E2E_BASE_URL=https://agentverse-nu-murex.vercel.app npx playwright test     # end to end, against production
-node --conditions=react-server --env-file=.env.local --import tsx scripts/cleanup-e2e.mts   # remove test accounts
+npm run e2e:cleanup                                                         # remove test accounts
 ```
+
+**Unit tests** (`test/core-logic.test.ts`, Vitest) cover message merging, de-duplication and
+ordering, channel previews (Markdown, citations and streamed replies), names from emails, the
+sources footer, stream summary parsing, the citation registry, URL and redirect safety, and mention
+resolution.
+
+**Sign-up in end-to-end tests** uses Clerk's test mode: addresses like
+`e2e.asha.x1y2+clerk_test@example.com` are verified with the code `424242` and no email is sent.
+On real domains Clerk's bot protection challenges automated browsers, so the helpers request a
+Clerk testing token with `CLERK_SECRET_KEY` (read from `.env.local`) and attach it to Clerk's
+requests, the same mechanism as `@clerk/testing`.
 
 The end-to-end suite runs against the real stack with two browser contexts: two people sign up
 through Clerk (test-mode emails), one invites the other, they chat in real time, ask the Researcher
