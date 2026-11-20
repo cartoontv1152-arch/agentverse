@@ -394,6 +394,22 @@ agent in the Studio, and use memory, private translation and agent DMs.
 | Agents answer "You're asking agents faster than they can keep up" | The per-minute AI limit (6 replies). The message says when agents are available again. |
 | Private translations and catch-ups disappear after a reload | Enable "Targeted group cloud retention" in the Nexconn console to keep targeted messages in history. |
 
+## What's new
+
+The November 2026 release (see [CHANGELOG.md](CHANGELOG.md) for details):
+
+- **A new look.** New logo, colours and type; each agent has its own colour and icon; every page
+  redesigned, including a landing page whose hero is a live chat.
+- **Sign-in with Clerk.** Email with a verification code, or Google. New members confirm their
+  display name once.
+- **A new Nexconn app.** All environments moved to the new App Key; a provisioning script registers
+  agents, people and spaces on any app.
+- **Everything a production site needs.** Favicon, app icons, social card, manifest, robots,
+  sitemap, 404 and error pages, security headers.
+- **Fixes.** Full agent replies after a reload, chats open at the newest message, previews for
+  streamed replies, sources on every research answer, clickable starter prompts, and a toggle that
+  no longer draws outside its track.
+
 ## Project layout
 
 ```
