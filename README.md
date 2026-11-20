@@ -341,6 +341,21 @@ AgentVerse deploys to Vercel (functions in `sin1`, next to Nexconn's Singapore d
 Schema changes follow expand then contract: ship additive migrations first, deploy, and drop old
 columns only in a later release once no running code reads them.
 
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Local dev server on http://localhost:3102 |
+| `npm run build` / `npm start` | Production build and server |
+| `npm run check` | Typecheck, lint and unit tests in one go |
+| `npm run typecheck` / `npm run lint` / `npm test` | Each check on its own |
+| `npm run db:generate` | Create a migration from `src/lib/db/schema.ts` changes |
+| `npm run db:migrate` | Apply pending migrations over Neon's HTTP driver (`scripts/migrate.mts`) |
+| `npm run nexconn:provision` | Register agents, people and group channels on the configured Nexconn app |
+| `npx playwright test` | End-to-end tests (set `E2E_BASE_URL` to test a deployment) |
+| `npm run e2e:cleanup` | Delete e2e test accounts from Clerk and the database (`-- --dry-run` to preview) |
+| `scripts/smoke-agent.mts`, `scripts/smoke-research.mts` | Run one agent or the research tools against the real APIs from the terminal |
+
 ## Tests
 
 ```bash
