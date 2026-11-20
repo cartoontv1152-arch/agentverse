@@ -1,0 +1,28 @@
+// Debug probe: one user, one space; trigger the Researcher via the API and print engine events.
+import { chromium } from "@playwright/test";
+const base = "http://localhost:3102";
+const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM_PATH });
+const context = await browser.newContext();
+const page = await context.newPage();
+page.on("console", (m) => { const t = m.text(); if (t.includes("[agv]") || m.type() === "error") console.log("console:", t.slice(0, 1500)); });
+const email = `probe.${Date.now()}@e2e.agentverse.test`;
+let r = await context.request.post(`${base}/api/auth/signup`, { data: { name: "Probe User", email, password: "correct-horse-42" }, timeout: 90000 });
+console.log("signup", r.status());
+r = await context.request.post(`${base}/api/spaces`, { data: { name: "Probe space" }, timeout: 90000 });
+const { space } = await r.json();
+console.log("space", space.id);
+await page.goto(`${base}/app`);
+await page.evaluate(() => localStorage.setItem("agv-debug", "1"));
+await page.goto(`${base}/app/s/${space.id}`);
+await page.waitForSelector('[title="Connected"]', { timeout: 90000 });
+console.log("connected");
+await page.waitForTimeout(3000);
+const msgId = "PROBE-" + Date.now();
+r = await context.request.post(`${base}/api/spaces/${space.id}/messages`, { data: { messageId: msgId, text: process.argv[2] ?? "@Pollster make a poll: tea or coffee?", mentionedIds: [] }, timeout: 90000 });
+console.log("trigger", r.status(), await r.text());
+await page.waitForTimeout(Number(process.argv[3] ?? 45000));
+console.log("--- reload ---");
+await page.reload();
+await page.waitForTimeout(15000);
+await page.screenshot({ path: "probe.png" });
+await browser.close();
