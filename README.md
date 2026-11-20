@@ -457,3 +457,7 @@ known limitations.
   only if "Targeted group cloud retention" is enabled in the console.
 - The SDK's typing status is direct-channel only; groups use a transient custom message.
 - Free-tier Gemini can return 429/503 under load; the agent then posts a visible error notice.
+- The live app uses a Clerk development instance, so sign-in shows a "Development mode" badge and
+  Clerk's development limits apply. A production instance needs a custom domain.
+- Clerk sign-up collects email and password only; names come from the one-time welcome step (or
+  require first and last name in the Clerk dashboard).
