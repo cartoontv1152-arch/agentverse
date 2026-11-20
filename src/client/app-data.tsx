@@ -9,6 +9,8 @@ export interface Me {
   email: string;
   avatarUrl: string | null;
   nexconnId: string;
+  /** False until the person confirms their display name after sign-up. */
+  nameConfirmed: boolean;
 }
 
 export interface SpaceListItem {

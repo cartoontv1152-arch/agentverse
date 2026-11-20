@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { startChat } from "@/client/chat/engine";
 import { Sidebar } from "./sidebar";
 import { ConnectionBanner } from "./connection-banner";
+import { WelcomeDialog } from "./welcome-dialog";
 
 function ChatBoot() {
   useEffect(() => {
@@ -57,6 +58,7 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
       <AppDataProvider initialMe={me}>
         <ChatBoot />
         <Frame>{children}</Frame>
+        <WelcomeDialog />
       </AppDataProvider>
     </ToastProvider>
   );

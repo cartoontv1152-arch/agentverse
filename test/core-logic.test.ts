@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergeMessages, messagePreview, type ChatMessage } from "@/client/chat/store";
+import { nameFromEmail } from "@/lib/names";
 import { formatSourcesFooter, parseStreamSummary, splitSourcesFooter } from "@/lib/message-types";
 import { looksLikeOpenQuestion, resolveMentionedAgents } from "@/lib/mentions";
 import { SourceRegistry, extractUrls, isPublicHttpUrl } from "@/lib/ai/research";
@@ -141,5 +142,13 @@ describe("mention resolution", () => {
     expect(looksLikeOpenQuestion("What time does the museum open?")).toBe(true);
     expect(looksLikeOpenQuestion("ok?")).toBe(false);
     expect(looksLikeOpenQuestion("@Ben are you coming tonight?")).toBe(false);
+  });
+});
+
+describe("names from email", () => {
+  it("turns the local part into a readable name", () => {
+    expect(nameFromEmail("asha.rao+clerk_test@example.com")).toBe("Asha Rao");
+    expect(nameFromEmail("ben_okafor@example.com")).toBe("Ben Okafor");
+    expect(nameFromEmail("+x@example.com")).toBe("New member");
   });
 });

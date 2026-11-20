@@ -22,6 +22,8 @@ export const users = pgTable(
     clerkId: text("clerk_id"),
     email: text("email").notNull(),
     name: text("name").notNull(),
+    /** False until the person confirms their display name (Clerk sign-up may not collect one). */
+    nameConfirmed: boolean("name_confirmed").notNull().default(true),
     /** Legacy password logins (before Clerk). Dropped by a later migration. */
     passwordHash: text("password_hash"),
     avatarUrl: text("avatar_url"),

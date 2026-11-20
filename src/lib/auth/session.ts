@@ -5,6 +5,7 @@ import { getDb, schema } from "@/lib/db";
 import type { User } from "@/lib/db/schema";
 import { newNexconnId } from "@/lib/nexconn/ids";
 import { issueAccessToken } from "@/lib/nexconn/server";
+import { nameFromEmail } from "@/lib/names";
 
 /**
  * Sessions are owned by Clerk (sign-up, sign-in, verification, password resets, Google).
@@ -12,7 +13,7 @@ import { issueAccessToken } from "@/lib/nexconn/server";
  * Nexconn identity. The row is created the first time a signed-in person reaches the app.
  */
 
-export type SessionUser = Pick<User, "id" | "email" | "name" | "avatarUrl" | "nexconnId">;
+export type SessionUser = Pick<User, "id" | "email" | "name" | "avatarUrl" | "nexconnId" | "nameConfirmed">;
 
 const columns = {
   id: schema.users.id,
@@ -20,6 +21,7 @@ const columns = {
   name: schema.users.name,
   avatarUrl: schema.users.avatarUrl,
   nexconnId: schema.users.nexconnId,
+  nameConfirmed: schema.users.nameConfirmed,
 };
 
 /** The Clerk user id for this request, or null when signed out. */
@@ -36,9 +38,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return row ?? provisionUser(clerkId);
 }
 
-function displayName(user: ClerkUser, email: string): string {
+/** The name Clerk knows, or null when sign-up didn't collect one. */
+function clerkName(user: ClerkUser): string | null {
   const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  return (full || user.username || email.split("@")[0]).slice(0, 60);
+  return (full || user.username || "").slice(0, 60) || null;
 }
 
 async function provisionUser(clerkId: string): Promise<SessionUser | null> {
@@ -56,12 +59,13 @@ async function provisionUser(clerkId: string): Promise<SessionUser | null> {
     if (linked) return linked;
   }
 
-  const name = displayName(clerkUser, email);
+  const known = clerkName(clerkUser);
+  const name = known ?? nameFromEmail(email);
   const avatarUrl = clerkUser.hasImage ? clerkUser.imageUrl : null;
   const nexconnId = newNexconnId("u");
   const [created] = await db
     .insert(schema.users)
-    .values({ clerkId, email, name, avatarUrl, nexconnId })
+    .values({ clerkId, email, name, avatarUrl, nexconnId, nameConfirmed: Boolean(known) })
     .onConflictDoNothing()
     .returning(columns);
   if (!created) {

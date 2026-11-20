@@ -15,9 +15,9 @@ export const PATCH = route(async (req: Request) => {
   const input = await parseJson(req, profileSchema);
   const [updated] = await getDb()
     .update(schema.users)
-    .set({ ...(input.name !== undefined ? { name: input.name } : {}), ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}) })
+    .set({ ...(input.name !== undefined ? { name: input.name, nameConfirmed: true } : {}), ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}) })
     .where(eq(schema.users.id, user.id))
-    .returning({ id: schema.users.id, name: schema.users.name, email: schema.users.email, avatarUrl: schema.users.avatarUrl, nexconnId: schema.users.nexconnId });
+    .returning({ id: schema.users.id, name: schema.users.name, email: schema.users.email, avatarUrl: schema.users.avatarUrl, nexconnId: schema.users.nexconnId, nameConfirmed: schema.users.nameConfirmed });
   // Keep the Nexconn user profile (used in push notifications) in sync.
   await updateUser(updated.nexconnId, updated.name, updated.avatarUrl).catch((err) => console.warn("[me] nexconn profile sync failed", err));
   return ok({ user: updated });
