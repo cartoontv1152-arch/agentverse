@@ -204,6 +204,20 @@ holds the app profile and the person's Nexconn identity, so a Nexconn token is i
 is registered on Nexconn the first time they sign in. `src/proxy.ts` runs `clerkMiddleware`; every
 API route and the `/app` layout check the session themselves.
 
+- **First visit.** The app profile is created from the Clerk user. Clerk's sign-up form asks only
+  for email and password, so the name starts as a readable guess from the email
+  ("asha.rao@..." becomes "Asha Rao") and a one-time welcome dialog asks what people should call you.
+- **Invites survive sign-up.** `/signup?next=/join/<code>` brings people back to their invite after
+  verifying their email. The forms use hash routing, so `next` is kept across every Clerk step.
+- **Existing accounts.** If a verified email already has an AgentVerse profile, the Clerk account is
+  linked to it instead of creating a duplicate.
+- **Account settings.** Settings opens Clerk's account manager for email, password, Google and
+  signed-in devices; the display name and photo stay in AgentVerse.
+- **Themed to match.** `src/lib/clerk-appearance.ts` applies the app's colours, fonts and radii and
+  sets the copy of the first step; later steps keep Clerk's own instructions.
+- **If the profile can't be created** (for example the database is unreachable), the app explains
+  what happened with Reload and Sign out instead of bouncing between `/login` and `/app`.
+
 ## AI (Gemini)
 
 One runtime for all agents (`src/lib/ai/runtime.ts`): the system prompt combines the agent's
