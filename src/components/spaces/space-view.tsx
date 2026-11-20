@@ -1,17 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpenCheck, PanelRight, UserPlus, X } from "lucide-react";
+import { BookOpenCheck, Info, PanelRight, UserPlus, X } from "lucide-react";
 import { api, ClientApiError, limitHint, useResource } from "@/client/api";
 import { useAppData, type Profile } from "@/client/app-data";
 import { chatStore, useChat, type ChatMessage } from "@/client/chat/store";
 import { useToast } from "@/components/ui/toast";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, IconButton } from "@/components/ui/button";
-import { PageHeader } from "@/components/shell/page-header";
+import { PageHeader, PageTitle } from "@/components/shell/page-header";
 import { ChatView } from "@/components/chat/chat-view";
 import { messageText } from "@/components/chat/message-row";
 import type { Mentionable } from "@/components/chat/composer";
+import { agentVisual } from "@/lib/agent-visual";
 import { InviteDialog } from "./invite-dialog";
 import { TranslateDialog } from "./translate-dialog";
 import { SpacePanel, type PanelTab } from "./space-panel";
@@ -19,23 +20,24 @@ import type { SpaceDetail } from "./types";
 import { useNow } from "@/client/use-now";
 import { useMediaQuery } from "@/client/use-media-query";
 
-/** The roster strip: agents as square tiles that light up while they work. */
+/** The roster strip: agents as square tiles that light up in their own hue while they work. */
 function AgentStrip({ detail, channelKey, onOpen }: { detail: SpaceDetail; channelKey: string; onOpen: () => void }) {
   const activity = useChat((s) => s.agents[channelKey]);
   const now = useNow(10000);
   if (detail.agents.length === 0) return null;
   return (
-    <button type="button" onClick={onOpen} className="hidden items-center gap-1 rounded-control px-1.5 py-1 hover:bg-ink/5 md:flex" aria-label="Agents in this space">
+    <button type="button" onClick={onOpen} className="mr-1 hidden items-center gap-1.5 rounded-control px-2 py-1 transition-colors hover:bg-ink/5 md:flex" aria-label="Agents in this space">
       {detail.agents.slice(0, 6).map((a) => {
         const working = activity?.[a.nexconnId] && now - activity[a.nexconnId].at < 120000 && activity[a.nexconnId].state !== "error";
+        const visual = agentVisual(a.handle, a.nexconnId);
         return (
-          <span key={a.id} title={`@${a.handle}${a.enabled ? "" : " (paused)"}`} className={`relative ${a.enabled ? "" : "opacity-40"}`}>
-            <Avatar name={a.name} src={a.avatarUrl} kind="agent" size="sm" />
-            {working ? <span aria-hidden className="absolute -inset-[3px] animate-working rounded-[26%] border-2 border-accent" /> : null}
+          <span key={a.id} title={`@${a.handle}${a.enabled ? "" : " (paused)"}`} className={`relative transition-opacity ${a.enabled ? "" : "opacity-35 grayscale"}`}>
+            <Avatar name={a.name} src={a.avatarUrl} kind="agent" handle={a.handle} seed={a.nexconnId} size="sm" />
+            {working ? <span aria-hidden className="absolute -inset-[3px] animate-working rounded-[30%] border-2" style={{ borderColor: visual.colors.bg }} /> : null}
           </span>
         );
       })}
-      {detail.agents.length > 6 ? <span className="ml-1 text-2xs text-ink/55">+{detail.agents.length - 6}</span> : null}
+      {detail.agents.length > 6 ? <span className="ml-0.5 text-2xs font-semibold text-ink/50">+{detail.agents.length - 6}</span> : null}
     </button>
   );
 }
@@ -53,6 +55,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
   const [catchup, setCatchup] = useState<{ unread: number; since: string } | null>(null);
   const [catchupBusy, setCatchupBusy] = useState(false);
   const [memoryVersion, setMemoryVersion] = useState(0);
+  const [draft, setDraft] = useState<{ text: string; nonce: number } | null>(null);
   const initialUnread = useRef<number | null>(null);
   const wide = useMediaQuery("(min-width: 1280px)");
 
@@ -142,13 +145,16 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
     return (
       <>
         <PageHeader>
-          <h1 className="font-semibold">Space</h1>
+          <PageTitle title="Space" />
         </PageHeader>
-        <div className="p-10 text-center">
-          <p className="font-medium">{error.status === 404 ? "This space doesn't exist or you're not a member." : error.message}</p>
-          <Button className="mt-4" onClick={() => void reload()}>
-            Try again
-          </Button>
+        <div className="mx-auto max-w-md px-6 py-16 text-center">
+          <p className="font-display text-xl font-semibold">{error.status === 404 ? "This space doesn't exist, or you're not a member" : "This space didn't load"}</p>
+          <p className="mt-2 text-ink/60">{error.status === 404 ? "Ask someone in the space for an invite link." : error.message}</p>
+          {error.status !== 404 ? (
+            <Button className="mt-5" onClick={() => void reload()}>
+              Try again
+            </Button>
+          ) : null}
         </div>
       </>
     );
@@ -158,7 +164,10 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
     return (
       <>
         <PageHeader>
-          <div className="h-4 w-40 animate-pulse rounded bg-ink/8" />
+          <div className="space-y-1.5">
+            <div className="skeleton h-4 w-40 rounded" />
+            <div className="skeleton h-3 w-24 rounded" />
+          </div>
         </PageHeader>
         <div className="flex-1" aria-busy="true" />
       </>
@@ -166,7 +175,22 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
   }
 
   const togglePanel = (t: PanelTab) => setPanel((p) => (p === t ? null : t));
-  const agentHandles = detail.agents.filter((a) => a.enabled).slice(0, 3).map((a) => `@${a.handle}`);
+  const enabledAgents = detail.agents.filter((a) => a.enabled);
+  const starters = [
+    enabledAgents.find((a) => a.builtinKey === "researcher") && `@Researcher what should we know before we start?`,
+    enabledAgents.find((a) => a.builtinKey === "planner") && `@Planner make a checklist for this week`,
+    enabledAgents.find((a) => a.builtinKey === "pollster") && `@Pollster help us pick a day to meet`,
+  ].filter((s): s is string => Boolean(s));
+
+  const panelProps = {
+    detail,
+    tab: panel ?? ("people" as PanelTab),
+    onTab: setPanel,
+    onClose: () => setPanel(null),
+    onInvite: () => setInviting(true),
+    reload: () => void reload(),
+    memoryVersion,
+  };
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -176,7 +200,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
             <>
               <AgentStrip detail={detail} channelKey={channelKey} onOpen={() => togglePanel("agents")} />
               <span className="hidden sm:block">
-                <Button size="sm" variant="ghost" onClick={() => setInviting(true)}>
+                <Button size="sm" variant="secondary" onClick={() => setInviting(true)}>
                   <UserPlus aria-hidden className="size-4" /> Invite
                 </Button>
               </span>
@@ -185,20 +209,22 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
                   <UserPlus className="size-4" />
                 </IconButton>
               </span>
-              <IconButton label={panel ? "Hide details" : "Show details"} onClick={() => setPanel((p) => (p ? null : "people"))} aria-pressed={Boolean(panel)}>
+              <IconButton
+                label={panel ? "Hide details" : "Show details"}
+                onClick={() => setPanel((p) => (p ? null : "people"))}
+                aria-pressed={Boolean(panel)}
+                className={panel ? "bg-ink/6 text-ink" : ""}
+              >
                 <PanelRight className="size-4" />
               </IconButton>
             </>
           }
         >
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold" data-testid="space-title">
-              {detail.space.name}
-            </h1>
-            <p className="truncate text-2xs text-ink/55">
-              {detail.members.length} {detail.members.length === 1 ? "person" : "people"}, {detail.agents.filter((a) => a.enabled).length} agents
-            </p>
-          </div>
+          <PageTitle
+            title={detail.space.name}
+            testId="space-title"
+            subtitle={`${detail.members.length} ${detail.members.length === 1 ? "person" : "people"}, ${enabledAgents.length} ${enabledAgents.length === 1 ? "agent" : "agents"}${detail.space.description ? `. ${detail.space.description}` : ""}`}
+          />
         </PageHeader>
         <ChatView
           channelKey={channelKey}
@@ -209,12 +235,13 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
           onSent={onSent}
           onPin={onPin}
           onTranslate={(m) => setTranslating(m)}
+          draft={draft}
           banner={
             catchup ? (
-              <div className="mx-4 mb-2 mt-3 flex flex-wrap items-center gap-3 rounded-panel border border-accent/30 bg-accent/6 px-4 py-3 sm:mx-6">
+              <div className="mx-4 mb-2 mt-3 flex animate-rise flex-wrap items-center gap-3 rounded-panel border border-accent/20 bg-accent/[0.06] px-4 py-3 sm:mx-6">
                 <BookOpenCheck aria-hidden className="size-5 text-accent" />
                 <p className="min-w-0 flex-1 text-sm">
-                  <span className="font-medium">{catchup.unread} new messages</span> since you were last here.
+                  <span className="font-semibold">{catchup.unread} new messages</span> since you were last here.
                 </p>
                 <Button size="sm" variant="primary" loading={catchupBusy} onClick={requestCatchup}>
                   Catch me up
@@ -227,21 +254,46 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
           }
           notice={
             notice ? (
-              <div role={notice.tone === "error" ? "alert" : "status"} className={`mx-3 mb-1 flex items-start gap-2 rounded-control px-3 py-2 text-sm sm:mx-6 ${notice.tone === "error" ? "border border-signal/30 bg-signal/6" : "bg-ink/5 text-ink/75"}`}>
+              <div
+                role={notice.tone === "error" ? "alert" : "status"}
+                className={`mx-3 mb-1.5 flex animate-rise items-start gap-2.5 rounded-control px-3 py-2 text-sm sm:mx-6 ${notice.tone === "error" ? "border border-signal/25 bg-[#fdf1f0]" : "bg-paper text-ink/75"}`}
+              >
+                <Info aria-hidden className={`mt-0.5 size-4 shrink-0 ${notice.tone === "error" ? "text-signal" : "text-ink/45"}`} />
                 <span className="flex-1">{notice.text}</span>
-                <button type="button" aria-label="Dismiss" onClick={() => setNotice(null)} className="text-ink/50 hover:text-ink">
+                <button type="button" aria-label="Dismiss" onClick={() => setNotice(null)} className="rounded text-ink/45 hover:text-ink">
                   <X className="size-4" />
                 </button>
               </div>
             ) : null
           }
           empty={
-            <div className="mx-auto max-w-md text-center">
-              <h2 className="text-lg font-semibold">Start the conversation</h2>
-              <p className="mt-2 text-sm text-ink/65">
-                Say hello, invite people, or ask an agent for help. Try {agentHandles.length ? agentHandles.join(", ") : "adding an agent from the panel"}.
-              </p>
-              <Button className="mt-4" size="sm" variant="secondary" onClick={() => setInviting(true)}>
+            <div className="mx-auto max-w-lg text-center">
+              <div aria-hidden className="flex justify-center -space-x-2">
+                {detail.members.slice(0, 3).map((m) => (
+                  <Avatar key={m.id} name={m.name} src={m.avatarUrl} size="lg" className="ring-4 ring-surface" />
+                ))}
+                {enabledAgents.slice(0, 5).map((a) => (
+                  <Avatar key={a.id} name={a.name} src={a.avatarUrl} kind="agent" handle={a.handle} seed={a.nexconnId} size="lg" className="ring-4 ring-surface" />
+                ))}
+              </div>
+              <h2 className="mt-6 text-2xl font-semibold tracking-[-0.01em]">Start the conversation</h2>
+              <p className="mt-2 text-ink/60">Say hello, invite your people, or ask an agent. Try one of these:</p>
+              {starters.length ? (
+                <ul className="mt-5 flex flex-col items-center gap-2">
+                  {starters.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onClick={() => setDraft({ text: s, nonce: Date.now() })}
+                        className="rounded-full border border-ink/10 bg-surface px-4 py-2 text-sm text-ink/80 shadow-[0_1px_2px_rgb(22_26_44/0.04)] transition-[border-color,transform] hover:-translate-y-px hover:border-accent/40"
+                      >
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <Button className="mt-6" size="sm" variant="ghost" onClick={() => setInviting(true)}>
                 <UserPlus aria-hidden className="size-4" /> Invite people
               </Button>
             </div>
@@ -249,15 +301,15 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
         />
       </div>
       {panel && wide ? (
-        <div className="w-[340px] shrink-0 border-l border-ink/10">
-          <SpacePanel detail={detail} tab={panel} onTab={setPanel} onClose={() => setPanel(null)} onInvite={() => setInviting(true)} reload={() => void reload()} memoryVersion={memoryVersion} />
+        <div className="w-[352px] shrink-0 animate-fade border-l border-ink/8">
+          <SpacePanel {...panelProps} />
         </div>
       ) : null}
       {panel && !wide ? (
         <div className="fixed inset-0 z-30" role="dialog" aria-modal="true" aria-label="Space details">
-          <button type="button" aria-label="Close details" className="absolute inset-0 bg-ink/30" onClick={() => setPanel(null)} />
-          <div className="absolute inset-y-0 right-0 w-[92%] max-w-[380px] border-l border-ink/10">
-            <SpacePanel detail={detail} tab={panel} onTab={setPanel} onClose={() => setPanel(null)} onInvite={() => setInviting(true)} reload={() => void reload()} memoryVersion={memoryVersion} />
+          <button type="button" aria-label="Close details" className="absolute inset-0 animate-fade bg-ink/35" onClick={() => setPanel(null)} />
+          <div className="absolute inset-y-0 right-0 w-[92%] max-w-[380px] animate-slide-in-right border-l border-ink/8 shadow-float">
+            <SpacePanel {...panelProps} />
           </div>
         </div>
       ) : null}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SendHorizontal } from "lucide-react";
+import { AtSign, SendHorizontal } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 
 export interface Mentionable {
@@ -23,6 +23,7 @@ interface ComposerProps {
   onSend: (text: string, mentionedIds: string[]) => void;
   onTyping?: () => void;
   autoFocusKey?: string;
+  draft?: { text: string; nonce: number } | null;
 }
 
 /** Finds an "@query" token ending at the caret. */
@@ -33,7 +34,7 @@ function activeMention(text: string, caret: number): { start: number; query: str
   return { start: caret - m[2].length - 1, query: m[2] };
 }
 
-export function Composer({ placeholder, mentionables, disabled, disabledReason, onSend, onTyping, autoFocusKey }: ComposerProps) {
+export function Composer({ placeholder, mentionables, disabled, disabledReason, onSend, onTyping, autoFocusKey, draft }: ComposerProps) {
   const [text, setText] = useState("");
   const [caret, setCaret] = useState(0);
   const [highlight, setHighlight] = useState(0);
@@ -43,6 +44,16 @@ export function Composer({ placeholder, mentionables, disabled, disabledReason, 
   useEffect(() => {
     ref.current?.focus();
   }, [autoFocusKey]);
+
+  useEffect(() => {
+    if (!draft) return;
+    setText(draft.text);
+    setCaret(draft.text.length);
+    requestAnimationFrame(() => {
+      ref.current?.focus();
+      ref.current?.setSelectionRange(draft.text.length, draft.text.length);
+    });
+  }, [draft]);
 
   useEffect(() => {
     const el = ref.current;
@@ -73,6 +84,22 @@ export function Composer({ placeholder, mentionables, disabled, disabledReason, 
     requestAnimationFrame(() => {
       ref.current?.focus();
       ref.current?.setSelectionRange(pos, pos);
+    });
+  }
+
+  function startMention() {
+    const el = ref.current;
+    if (!el || disabled) return;
+    const at = el.selectionStart ?? text.length;
+    const needsSpace = at > 0 && !/\s/.test(text[at - 1]);
+    const next = `${text.slice(0, at)}${needsSpace ? " " : ""}@${text.slice(at)}`;
+    const pos = at + (needsSpace ? 2 : 1);
+    setText(next);
+    setCaret(pos);
+    setDismissed(false);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(pos, pos);
     });
   }
 
@@ -123,11 +150,14 @@ export function Composer({ placeholder, mentionables, disabled, disabledReason, 
     }
   }
 
+  const canSend = !disabled && Boolean(text.trim());
+
   return (
     <div className="relative px-3 pb-3 sm:px-6 sm:pb-5">
       {open ? (
-        <div className="absolute bottom-full left-3 right-3 z-20 mb-1 overflow-hidden rounded-panel border border-ink/14 bg-surface shadow-[0_12px_32px_-16px_rgba(27,36,32,0.4)] sm:left-6 sm:right-auto sm:w-96">
-          <ul role="listbox" id="mention-list" aria-label="Mention someone" className="max-h-72 overflow-y-auto py-1">
+        <div className="absolute bottom-full left-3 right-3 z-20 mb-1.5 animate-pop overflow-hidden rounded-panel border border-ink/10 bg-surface shadow-float sm:left-6 sm:right-auto sm:w-[25rem]">
+          <p className="border-b border-ink/6 px-3 py-2 text-2xs font-semibold text-ink/45">Mention an agent or a person</p>
+          <ul role="listbox" id="mention-list" aria-label="Mention someone" className="max-h-72 overflow-y-auto p-1">
             {suggestions.map((s, i) => (
               <li
                 key={s.nexconnId}
@@ -139,23 +169,40 @@ export function Composer({ placeholder, mentionables, disabled, disabledReason, 
                   insert(s);
                 }}
                 onMouseEnter={() => setHighlight(i)}
-                className={`flex cursor-pointer items-center gap-3 px-3 py-2 ${i === highlight ? "bg-ink/6" : ""}`}
+                className={`flex cursor-pointer items-center gap-3 rounded-control px-2.5 py-2 ${i === highlight ? "bg-paper" : ""}`}
               >
-                <Avatar name={s.name} src={s.avatarUrl} kind={s.kind} size="sm" />
+                <Avatar name={s.name} src={s.avatarUrl} kind={s.kind} handle={s.kind === "agent" ? s.label : null} seed={s.nexconnId} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {s.name}
-                    {s.kind === "agent" ? <span className="ml-1.5 text-2xs font-normal text-accent">Agent</span> : null}
-                    {s.disabled ? <span className="ml-1.5 text-2xs font-normal text-ink/45">Paused</span> : null}
+                  <p className="truncate text-sm font-semibold">
+                    {s.kind === "agent" ? `@${s.label}` : s.name}
+                    {s.disabled ? <span className="ml-1.5 text-2xs font-medium text-ink/45">Paused</span> : null}
                   </p>
-                  {s.description ? <p className="truncate text-2xs text-ink/55">{s.description}</p> : null}
+                  {s.description ? <p className="truncate text-2xs text-ink/55">{s.description}</p> : s.kind === "user" ? <p className="text-2xs text-ink/45">Person</p> : null}
                 </div>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
-      <div className={`flex items-end gap-2 rounded-panel border bg-surface px-3 py-2 transition-colors ${disabled ? "border-ink/10" : "border-ink/18 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/15"}`}>
+      <div
+        className={`flex items-end gap-1.5 rounded-panel border bg-surface py-1.5 pl-1.5 pr-1.5 shadow-[0_1px_2px_rgb(22_26_44/0.04)] transition-[border-color,box-shadow] ${
+          disabled ? "border-ink/8 bg-paper" : "border-ink/14 focus-within:border-accent focus-within:ring-[3px] focus-within:ring-accent/12"
+        }`}
+      >
+        {mentionables.length ? (
+          <button
+            type="button"
+            onClick={startMention}
+            disabled={disabled}
+            aria-label="Mention someone"
+            title="Mention an agent or person"
+            className="grid size-8 shrink-0 place-items-center rounded-control text-ink/45 transition-colors hover:bg-ink/6 hover:text-ink disabled:opacity-40"
+          >
+            <AtSign className="size-4" />
+          </button>
+        ) : (
+          <span className="w-1.5" />
+        )}
         <textarea
           ref={ref}
           value={text}
@@ -176,20 +223,22 @@ export function Composer({ placeholder, mentionables, disabled, disabledReason, 
           }}
           onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
           onKeyDown={onKeyDown}
-          className="max-h-[200px] min-h-6 flex-1 resize-none bg-transparent py-1 text-[0.9375rem] leading-6 placeholder:text-ink/40 focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed"
+          className="max-h-[200px] min-h-8 flex-1 resize-none bg-transparent py-1 text-[0.9375rem] leading-6 placeholder:text-ink/40 focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed"
         />
         <button
           type="button"
           onClick={submit}
-          disabled={disabled || !text.trim()}
+          disabled={!canSend}
           aria-label="Send message"
-          className="grid size-8 shrink-0 place-items-center rounded-control bg-accent text-paper transition-opacity hover:bg-accent/90 disabled:bg-ink/15 disabled:text-ink/40"
+          className={`grid size-8 shrink-0 place-items-center rounded-control transition-[background-color,color,transform] duration-150 active:scale-95 ${
+            canSend ? "bg-accent text-white hover:bg-accent-strong" : "bg-ink/6 text-ink/35"
+          }`}
         >
           <SendHorizontal className="size-4" />
         </button>
       </div>
-      <p className="mt-1.5 hidden px-1 text-2xs text-ink/45 sm:block">
-        Enter to send, Shift + Enter for a new line. Type @ to mention a person or an agent.
+      <p className="mt-1.5 hidden px-1 text-2xs text-ink/40 sm:block">
+        <kbd className="font-sans font-semibold">Enter</kbd> to send, <kbd className="font-sans font-semibold">Shift + Enter</kbd> for a new line, <kbd className="font-sans font-semibold">@</kbd> to mention a person or an agent.
       </p>
     </div>
   );

@@ -24,6 +24,8 @@ const BUILTIN: Record<string, { hue: Hue; icon: LucideIcon }> = {
   translator: { hue: "iris", icon: Languages },
 };
 
+export const BUILTIN_AGENT_HANDLES = ["Researcher", "Planner", "Pollster", "Summarizer", "Translator"] as const;
+
 const CUSTOM_HUES: Hue[] = ["teal", "iris", "berry", "jade", "saffron", "cobalt"];
 
 function hash(value: string): number {
