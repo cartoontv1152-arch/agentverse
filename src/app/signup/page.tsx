@@ -12,10 +12,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   if (await getClerkUserId()) redirect(next);
   const joining = next.startsWith("/join/");
   return (
-    <AuthLayout
-      title={joining ? "Create an account to join" : "Create your account"}
-      subtitle={joining ? "You'll go straight back to your invite." : "Free to use. Your first space takes under a minute."}
-    >
+    <AuthLayout note={joining ? "Create an account and you'll go straight back to your invite." : undefined}>
       <SignupForm next={next} />
     </AuthLayout>
   );

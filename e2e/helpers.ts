@@ -40,9 +40,50 @@ export async function confirmName(page: Page, name: string) {
   await expect(field).toBeHidden({ timeout: 30_000 });
 }
 
+/* ---------------------------------------------------------------------------------------------
+ * Clerk testing tokens: Clerk's bot protection challenges automated browsers on real domains.
+ * A testing token (Backend API, needs CLERK_SECRET_KEY) added to Frontend API requests skips
+ * that check for test runs only. Same mechanism as @clerk/testing's setupClerkTestingToken.
+ * ------------------------------------------------------------------------------------------- */
+
+let testingToken: Promise<string> | null = null;
+
+function clerkTestingToken(): Promise<string> {
+  testingToken ??= (async () => {
+    const key = process.env.CLERK_SECRET_KEY;
+    if (!key) throw new Error("CLERK_SECRET_KEY is required for e2e sign-up (set it in .env.local)");
+    const res = await fetch("https://api.clerk.com/v1/testing_tokens", { method: "POST", headers: { Authorization: `Bearer ${key}` } });
+    const data = (await res.json()) as { token?: string };
+    if (!data.token) throw new Error(`Couldn't get a Clerk testing token (HTTP ${res.status})`);
+    return data.token;
+  })();
+  return testingToken;
+}
+
+/** Clerk's Frontend API host, encoded in the publishable key. */
+function clerkFrontendHost(): string {
+  const pk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+  return Buffer.from(pk.split("_")[2] ?? "", "base64").toString().replace(/\$$/, "");
+}
+
+/** A browser context whose Clerk requests carry a testing token. */
+export async function newContext(browser: Browser): Promise<BrowserContext> {
+  const context = await browser.newContext();
+  const [token, host] = [await clerkTestingToken(), clerkFrontendHost()];
+  await context.route(
+    (url) => url.hostname === host && url.pathname.startsWith("/v1/"),
+    async (route) => {
+      const url = new URL(route.request().url());
+      url.searchParams.set("__clerk_testing_token", token);
+      await route.continue({ url: url.toString() });
+    },
+  );
+  return context;
+}
+
 /** Signs up through the real UI (Clerk) and sets the display name. */
 export async function signUp(browser: Browser, name: string, next?: string): Promise<Person> {
-  const context = await browser.newContext();
+  const context = await newContext(browser);
   const page = await context.newPage();
   const email = uniqueEmail(name.split(" ")[0].toLowerCase());
   await page.goto(next ? `/signup?next=${encodeURIComponent(next)}` : "/signup");

@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (await getClerkUserId()) redirect(next);
   const joining = next.startsWith("/join/");
   return (
-    <AuthLayout title="Welcome back" subtitle={joining ? "Log in and you'll go straight back to your invite." : "Log in to pick up where your spaces left off."}>
+    <AuthLayout note={joining ? "Log in and you'll go straight back to your invite." : undefined}>
       <LoginForm next={next} />
     </AuthLayout>
   );

@@ -1,4 +1,8 @@
+import { config } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
+
+// Clerk keys for sign-up testing tokens (see e2e/helpers.ts).
+config({ path: ".env.local", quiet: true });
 
 /**
  * End-to-end tests against the real stack (Neon, Nexconn, Gemini). No mocks.

@@ -186,8 +186,9 @@ known limitations.
 ## Known limitations
 
 - The Web SDK did not push server-sent `RC:StreamMsg` to group members in realtime in our tests, so
-  clients pull streams; replies arrive in a few larger steps, and the final text always arrives
-  through Nexconn's stream summary metadata.
+  clients pull streams with `requestStreamMessage` and replies arrive in a few larger steps.
+  Nexconn's stream summary metadata is only a preview (about 500 characters), so history also pulls
+  each stream's full content.
 - Private replies (catch-up, Translate) are targeted group messages. Nexconn keeps them in history
   only if "Targeted group cloud retention" is enabled in the console.
 - The SDK's typing status is direct-channel only; groups use a transient custom message.
