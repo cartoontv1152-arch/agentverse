@@ -227,6 +227,21 @@ context), `propose_checklist`, `propose_poll` and `propose_memory`. The Research
 before answering and its sources are attached to the reply. Models come from `GEMINI_MODEL` with
 `GEMINI_FALLBACK_MODEL`, with retries on 429/503.
 
+- **Sources you can check.** Sources are numbered as the tools return them and only the ones cited
+  as `[n]` are attached. If the Researcher answers without markers, the sources it read are attached
+  instead of none.
+- **Fair limits.** 6 agent replies a minute and 40 an hour per person, 120 an hour per space. Hitting
+  a limit returns a clear message with the time agents are available again; usage meters live in
+  the space settings and profile settings.
+- **Failures are visible.** If a model call fails, the agent posts a notice in the chat and its
+  status turns red, instead of leaving people waiting.
+- **Safe browsing.** `read_url` refuses private, local and non-HTTP addresses before any request is
+  made.
+- **Test before you share.** The Agent Studio's test console runs the real model and tools with
+  your unsaved edits; proposals show as previews and nothing is posted to a chat.
+- **Optional auto-replies.** In "also answer open questions" mode, one small routing call decides
+  whether an agent should pick up a question nobody answered.
+
 ## Tech stack
 
 Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Nexconn Web Chat SDK and Platform Chat API,
