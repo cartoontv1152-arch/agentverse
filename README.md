@@ -264,6 +264,26 @@ The whole identity comes from one rule of the product: **people are circles, age
   navigation for @mentions, live regions for agent status and typing, and layouts that work down
   to phone width.
 
+## Production readiness
+
+- **Access control in every resource.** Every API route calls `requireUser()` and validates input
+  with zod; space routes check membership and answer 404 to non-members, so a space's existence
+  never leaks.
+- **Secrets stay on the server.** The Nexconn App Secret, Clerk secret key and Gemini key are only
+  read server-side; the browser gets the public Nexconn App Key and a per-user token.
+- **Security headers** on every response: `X-Content-Type-Options`, `Referrer-Policy`,
+  `X-Frame-Options: DENY` and a restrictive `Permissions-Policy`.
+- **Rate limits** for AI runs (per person and per space), uploads and reconnect token refreshes.
+- **Everything a site needs:** favicon (`.ico` and SVG with a dark-mode variant), Apple touch icon,
+  Open Graph and Twitter card image, web app manifest, `robots.txt`, `sitemap.xml`, page titles
+  and descriptions.
+- **Clear failure states:** a branded 404, an error page with **Try again**, a last-resort global
+  error page, a reconnecting banner, and Retry/Discard on failed sends.
+- **Safe schema changes.** Migrations follow expand then contract: the Clerk switch added
+  `clerk_id` first and dropped the old password column only after the new code was live.
+- **Deployed next to its services.** Vercel functions run in Singapore (`sin1`), the same region as
+  the Nexconn data center.
+
 ## Tech stack
 
 Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Nexconn Web Chat SDK and Platform Chat API,
