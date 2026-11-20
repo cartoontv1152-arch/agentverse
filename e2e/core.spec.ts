@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { AI_TIMEOUT, agentMessages, completeClerkSignUp, confirmName, send, signUp, uniqueEmail, waitForChat, type Person } from "./helpers";
+import { AI_TIMEOUT, agentMessages, completeClerkSignUp, confirmName, newContext, send, signUp, uniqueEmail, waitForChat, type Person } from "./helpers";
 
 /**
  * The core journey with two real people in two browser contexts, over real Nexconn realtime:
@@ -37,7 +37,7 @@ test.describe.serial("two people and their agents in one space", () => {
     await a.keyboard.press("Escape");
 
     // Ben has no account: invite page -> sign up -> back to the invite -> join.
-    const context = await browser.newContext();
+    const context = await newContext(browser);
     const b = await context.newPage();
     await b.goto(inviteUrl.pathname);
     await expect(b.getByRole("heading", { name: "Lisbon trip" })).toBeVisible();

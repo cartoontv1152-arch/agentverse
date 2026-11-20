@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
-import { clerkAppearance } from "@/lib/clerk-appearance";
+import { clerkAppearance, clerkLocalization } from "@/lib/clerk-appearance";
 import "./globals.css";
 
 // Funnel Sans and Funnel Display (SIL Open Font License), self-hosted so builds never depend
@@ -52,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider
       appearance={clerkAppearance}
+      localization={clerkLocalization}
       signInUrl="/login"
       signUpUrl="/signup"
       signInFallbackRedirectUrl="/app"

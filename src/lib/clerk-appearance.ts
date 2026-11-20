@@ -22,8 +22,12 @@ export const clerkAppearance = {
   elements: {
     rootBox: "w-full",
     cardBox: "w-full shadow-none border-0 rounded-none bg-transparent",
-    card: "shadow-none border-0 bg-transparent p-0 gap-6",
-    header: "hidden",
+    card: "shadow-none border-0 bg-transparent p-0 gap-7",
+    // Each step's header carries its instructions ("Verify your email", "Enter your password").
+    header: "items-start text-left gap-2",
+    headerTitle: "font-display text-[1.875rem] leading-tight font-semibold tracking-[-0.02em] text-ink",
+    headerSubtitle: "text-[0.95rem] text-ink/65",
+    logoBox: "hidden",
     footer: "bg-none bg-transparent",
     footerAction: "bg-transparent",
     formButtonPrimary: "h-11 text-[0.95rem] font-semibold shadow-none",
@@ -33,3 +37,13 @@ export const clerkAppearance = {
     otpCodeFieldInput: "border border-[#d7dae3]",
   },
 } as const;
+
+/** Copy for the first step of Clerk's forms; later steps keep Clerk's own instructions. */
+export const clerkLocalization = {
+  signIn: {
+    start: { title: "Welcome back", subtitle: "Log in to pick up where your spaces left off." },
+  },
+  signUp: {
+    start: { title: "Create your account", subtitle: "Free to use. Your first space takes under a minute." },
+  },
+};

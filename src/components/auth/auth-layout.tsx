@@ -45,8 +45,11 @@ function ApprovedPreview() {
   );
 }
 
-/** Two-column auth frame: the Clerk form, and a still of what happens inside a space. */
-export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+/**
+ * Two-column auth frame: the Clerk form (its own header carries each step's title and
+ * instructions), and a still of what happens inside a space.
+ */
+export function AuthLayout({ note, children }: { note?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="flex flex-col px-5 py-6 sm:px-12 sm:py-8">
@@ -54,8 +57,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           <Logo />
         </Link>
         <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-10">
-          <h1 className="text-3xl font-semibold tracking-[-0.02em]">{title}</h1>
-          <p className="mb-8 mt-2 text-ink/65">{subtitle}</p>
+          {note ? <p className="mb-6 rounded-control border border-accent/20 bg-accent/[0.06] px-3.5 py-2.5 text-sm text-ink/80">{note}</p> : null}
           {children}
         </div>
         <p className="text-2xs text-ink/45">Sign-in by Clerk. Realtime chat by Nexconn. Agents run on Gemini.</p>
