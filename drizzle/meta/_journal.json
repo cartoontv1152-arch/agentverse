@@ -22,6 +22,13 @@
       "when": 1795198118868,
       "tag": "0002_name_confirmed",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795198851955,
+      "tag": "0003_drop_legacy_auth",
+      "breakpoints": true
     }
   ]
 }

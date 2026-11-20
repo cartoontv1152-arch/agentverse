@@ -24,8 +24,6 @@ export const users = pgTable(
     name: text("name").notNull(),
     /** False until the person confirms their display name (Clerk sign-up may not collect one). */
     nameConfirmed: boolean("name_confirmed").notNull().default(true),
-    /** Legacy password logins (before Clerk). Dropped by a later migration. */
-    passwordHash: text("password_hash"),
     avatarUrl: text("avatar_url"),
     nexconnId: text("nexconn_id").notNull(),
     nexconnToken: text("nexconn_token"),
@@ -36,20 +34,6 @@ export const users = pgTable(
     uniqueIndex("users_nexconn_idx").on(t.nexconnId),
     uniqueIndex("users_clerk_idx").on(t.clerkId),
   ],
-);
-
-export const sessions = pgTable(
-  "sessions",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    tokenHash: text("token_hash").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: createdAt(),
-  },
-  (t) => [uniqueIndex("sessions_token_idx").on(t.tokenHash), index("sessions_user_idx").on(t.userId)],
 );
 
 export type AgentTool = "search" | "tasks" | "polls" | "summarize" | "translate";

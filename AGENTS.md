@@ -161,9 +161,7 @@ docs/screenshots/         real screenshots from production
 
 ## Data model (Neon Postgres, `src/lib/db/schema.ts`)
 
-- `users` (`clerk_id` unique, email unique, `name_confirmed`, `nexconn_id`, cached `nexconn_token`;
-  `password_hash` and the `sessions` table are from the pre-Clerk login and are dropped by a
-  follow-up migration)
+- `users` (`clerk_id` unique, email unique, `name_confirmed`, `nexconn_id`, cached `nexconn_token`)
 - `agents` (built-in rows keyed by `builtin_key`, custom rows owned by a user; `handle`,
   `instructions`, `tools[]`, `avatar_url`, `nexconn_id`)
 - `spaces` (`nexconn_group_id`, `reply_mode`, `require_approval`), `space_members` (role,
