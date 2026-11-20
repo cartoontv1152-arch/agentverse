@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeMessages, messagePreview, type ChatMessage } from "@/client/chat/store";
 import { nameFromEmail } from "@/lib/names";
+import { HUES, agentVisual } from "@/lib/agent-visual";
 import { formatSourcesFooter, parseStreamSummary, splitSourcesFooter } from "@/lib/message-types";
 import { looksLikeOpenQuestion, resolveMentionedAgents } from "@/lib/mentions";
 import { SourceRegistry, extractUrls, isPublicHttpUrl } from "@/lib/ai/research";
@@ -150,5 +151,27 @@ describe("names from email", () => {
     expect(nameFromEmail("asha.rao+clerk_test@example.com")).toBe("Asha Rao");
     expect(nameFromEmail("ben_okafor@example.com")).toBe("Ben Okafor");
     expect(nameFromEmail("+x@example.com")).toBe("New member");
+  });
+});
+
+describe("agent visuals", () => {
+  it("gives built-in agents their own hue and icon, whatever the handle's case", () => {
+    expect(agentVisual("Researcher").hue).toBe("cobalt");
+    expect(agentVisual("planner").hue).toBe("saffron");
+    expect(agentVisual("POLLSTER").icon).not.toBeNull();
+  });
+
+  it("gives custom agents a stable hue from their id and no built-in icon", () => {
+    const a = agentVisual("TripConcierge", "agvaXYZ123");
+    expect(agentVisual("TripConcierge", "agvaXYZ123")).toEqual(a);
+    expect(a.icon).toBeNull();
+    expect(Object.keys(HUES)).toContain(a.hue);
+  });
+
+  it("has a readable text colour for every hue", () => {
+    for (const colors of Object.values(HUES)) {
+      expect(colors.bg).toMatch(/^#[0-9a-f]{6}$/);
+      expect(colors.fg === "#ffffff" || colors.fg === "#161a2c").toBe(true);
+    }
   });
 });
