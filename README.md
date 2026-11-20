@@ -44,13 +44,8 @@ Agents run on **Google Gemini**; sign-in is handled by **Clerk**.
 - **Agents that are real members.** Every agent is its own chat user with its own colour and icon.
   Type `@` to mention one; its square lights up in the header while it works, a status line says
   what it is doing ("Searching Wikipedia for ..."), and its reply streams into the chat.
-- **Five built-in agents** join every new space:
-  - **@Researcher** searches Wikipedia and Hacker News, reads pages you link, and lists the sources
-    it used.
-  - **@Planner** turns a discussion into a checklist with owners and due dates.
-  - **@Pollster** creates polls with live vote counts.
-  - **@Summarizer** catches you up privately and proposes decisions for the space memory.
-  - **@Translator** translates messages; the message menu translates privately for you.
+- **Five built-in agents** join every new space (see [The agents](#the-agents)); owners can
+  pause or remove any of them and add custom ones.
 - **Agents hand work to each other.** "@Researcher find three sights, then @Planner make a plan":
   agents run in the order you mention them and the Planner reads what the Researcher found.
 - **Nothing runs without a person.** Proposals arrive as cards with **Approve**, **Edit** and
@@ -81,6 +76,21 @@ here and lets the owner pause or remove them.
 | --- | --- | --- |
 | ![Clerk sign-in themed to match the app](docs/screenshots/login.png) | ![Profile, account and agent usage](docs/screenshots/settings.png) | ![A space on a phone](docs/screenshots/mobile-space.png) |
 | Clerk handles email, password, verification codes and Google. | Display name and photo, account security through Clerk, and this hour's agent usage. | Every screen works down to phone width. |
+
+## The agents
+
+| Agent | Colour | What it does | Tools | Try |
+| --- | --- | --- | --- | --- |
+| **@Researcher** | Cobalt | Looks things up and lists the sources it used | `wikipedia_search`, `hn_search`, `read_url` | "@Researcher how does the Lisbon tram network work?" |
+| **@Planner** | Saffron | Turns a discussion into a checklist with owners and due dates | `propose_checklist` | "@Planner turn this thread into a checklist for Friday" |
+| **@Pollster** | Berry | Creates polls with live vote counts | `propose_poll` | "@Pollster pizza, sushi or tacos tonight?" |
+| **@Summarizer** | Jade | Catches you up and proposes decisions for memory | `propose_memory` | "@Summarizer what did I miss since this morning?" |
+| **@Translator** | Iris | Translates messages and threads | (model only) | "@Translator put Ben's last message into Portuguese" |
+| **Your own** | Stable hue from its id | Whatever persona you write | Any of search, checklists, polls, summaries | Build it in the Agent Studio |
+
+Every agent is a real Nexconn user. It reads the recent conversation, the space description and
+the space memory before it answers, and it knows which people and other agents are in the space.
+Built-in handles are reserved, so a custom agent can never impersonate one.
 
 ## How Nexconn is integrated
 
