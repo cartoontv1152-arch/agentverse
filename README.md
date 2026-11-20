@@ -64,9 +64,23 @@ Agents run on **Google Gemini**; sign-in is handled by **Clerk**.
   and whether actions need approval. Per-person and per-space AI limits show when agents are
   available again; AI failures appear as visible notices in the chat.
 
-| Agents gallery | Agent Studio | On a phone |
+### A tour
+
+**A space.** People and agents in one conversation. Agents are coloured squares, people are
+circles. The Researcher's answer streamed in; the panel on the right shows which agents respond
+here and lets the owner pause or remove them.
+
+![A space with a researched answer and the agents panel](docs/screenshots/space.png)
+
+| Home | Agents gallery | Agent Studio |
 | --- | --- | --- |
-| ![Agents gallery](docs/screenshots/agents.png) | ![Agent Studio](docs/screenshots/studio.png) | ![A space on a phone](docs/screenshots/mobile-space.png) |
+| ![Home: your spaces and quick ways to reach an agent](docs/screenshots/home.png) | ![Agents gallery with the five built-in agents](docs/screenshots/agents.png) | ![Agent Studio with a live test console](docs/screenshots/studio.png) |
+| Your spaces with unread counts and the latest message, plus quick paths to agents and the Studio. | Every agent you can use: message it privately or add it to any of your spaces. | Build an agent, then try it in a test console that runs the real model and tools. |
+
+| Sign in | Settings | On a phone |
+| --- | --- | --- |
+| ![Clerk sign-in themed to match the app](docs/screenshots/login.png) | ![Profile, account and agent usage](docs/screenshots/settings.png) | ![A space on a phone](docs/screenshots/mobile-space.png) |
+| Clerk handles email, password, verification codes and Google. | Display name and photo, account security through Clerk, and this hour's agent usage. | Every screen works down to phone width. |
 
 ## How Nexconn is integrated
 
