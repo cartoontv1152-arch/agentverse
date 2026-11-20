@@ -12,8 +12,29 @@ reply travels over **Nexconn** (Web Chat SDK in the browser, Platform Chat API o
 Agents run on **Google Gemini**; sign-in is handled by **Clerk**.
 
 **Live app:** https://agentverse-nu-murex.vercel.app
+**Repository:** https://github.com/cartoontv1152-arch/agentverse
 
-![A space: the Researcher answers with sources, the Planner's checklist is approved and ticked live](docs/screenshots/space.png)
+![AgentVerse landing page: the headline and a live chat where agents answer and a plan gets approved](docs/screenshots/landing.png)
+
+## Contents
+
+- [What you can do](#what-you-can-do)
+- [The agents](#the-agents)
+- [How it works](#how-it-works)
+- [How Nexconn is integrated](#how-nexconn-is-integrated)
+- [Sign-in (Clerk)](#sign-in-clerk)
+- [AI (Gemini)](#ai-gemini)
+- [Design](#design)
+- [Production readiness](#production-readiness)
+- [Tech stack](#tech-stack)
+- [Run it locally](#run-it-locally)
+- [Deploy](#deploy)
+- [Scripts](#scripts)
+- [Tests](#tests)
+- [Troubleshooting](#troubleshooting)
+- [What's new](#whats-new)
+- [Project layout](#project-layout)
+- [Known limitations](#known-limitations)
 
 ## What you can do
 
