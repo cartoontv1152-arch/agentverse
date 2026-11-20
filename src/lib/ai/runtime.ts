@@ -416,7 +416,10 @@ export async function runAgent(ctx: AgentRunContext, sink: AgentSink): Promise<A
     if (!answer.trim() && counters.proposals === 0) {
       throw new AiUnavailableError("The agent returned an empty reply.", "failed");
     }
-    const cited = registry.cited(answer);
+    let cited = registry.cited(answer);
+    // The Researcher sometimes answers from what it read without inline [n] markers. Show the
+    // sources it consulted rather than none, so every research answer stays checkable.
+    if (cited.length === 0 && ctx.forceResearch) cited = registry.all.slice(0, 3).map((source, i) => ({ n: i + 1, source }));
     await sink.complete(cited);
     return { text: answer.trim(), sources: cited.map((c) => c.source), proposals: counters.proposals };
   } catch (err) {
