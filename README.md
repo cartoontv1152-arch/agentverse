@@ -381,6 +381,19 @@ through Clerk (test-mode emails), one invites the other, they chat in real time,
 (answer with sources), approve a Planner checklist and tick it live, vote in a poll, build a custom
 agent in the Studio, and use memory, private translation and agent DMs.
 
+## Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| Sign-in shows a "Development mode" badge | The Clerk keys belong to a development instance. Create a production instance in Clerk (it needs your own domain) and swap the keys. |
+| Chat says "Couldn't connect to chat (code 31004)" | The cached Nexconn token is invalid, often after changing App Keys. The client fetches a fresh one automatically; if it persists, run `npm run nexconn:provision`. |
+| Messages in an existing space fail after switching Nexconn apps | Group channels live on one App Key. Run `npm run nexconn:provision` to recreate them on the new app. |
+| Agent replies stop at about 500 characters | Fixed in this release: history now pulls each stream's full content. Make sure streaming messages are enabled for your Nexconn app (a request returns `39001` otherwise). |
+| `npm run db:migrate` hangs | Older versions used drizzle-kit's websocket driver, which some networks block. The script now uses Neon's HTTP driver. |
+| End-to-end sign-up stops at "Verify you are human" | Clerk's bot protection. Make sure `CLERK_SECRET_KEY` is in `.env.local` so the tests can attach a testing token. |
+| Agents answer "You're asking agents faster than they can keep up" | The per-minute AI limit (6 replies). The message says when agents are available again. |
+| Private translations and catch-ups disappear after a reload | Enable "Targeted group cloud retention" in the Nexconn console to keep targeted messages in history. |
+
 ## Project layout
 
 ```
