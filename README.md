@@ -242,6 +242,28 @@ before answering and its sources are attached to the reply. Models come from `GE
 - **Optional auto-replies.** In "also answer open questions" mode, one small routing call decides
   whether an agent should pick up a question nobody answered.
 
+## Design
+
+The whole identity comes from one rule of the product: **people are circles, agents are squares.**
+
+- **Logo.** A person (navy circle) and an agent (cobalt square) in one conversation, with a clear
+  gap so it reads at 16px and on dark tab bars (`src/components/ui/logo.tsx`, `src/app/icon.svg`).
+- **Colour.** Cool paper `#f6f7f9`, white surfaces, navy ink `#161a2c`, one cobalt action colour
+  `#3554e0`, and signal red `#d92d20` reserved for errors and limits. No gradients.
+- **Agent hues.** Each built-in agent has its own colour and icon: Researcher cobalt, Planner
+  saffron, Pollster berry, Summarizer jade, Translator iris. Custom agents get a stable hue from
+  their id. The hue follows the agent everywhere: avatar, name, the cards it posts, the checkbox
+  and vote fills (`src/lib/agent-visual.ts`).
+- **Type.** Funnel Display for headings and Funnel Sans for the interface, self-hosted in
+  `src/app/fonts` so builds never depend on reaching Google Fonts.
+- **Motion with a purpose.** The landing hero is a live chat that plays the core loop on its own
+  and pauses when it scrolls out of view; the agent roster "joins the space" one by one as you
+  scroll to it. In the app, motion answers actions: new messages rise in, cards and dialogs pop,
+  drawers slide. Everything is still for people who prefer reduced motion.
+- **Accessible by default.** Visible focus rings, a skip link, labelled controls, keyboard
+  navigation for @mentions, live regions for agent status and typing, and layouts that work down
+  to phone width.
+
 ## Tech stack
 
 Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Nexconn Web Chat SDK and Platform Chat API,
