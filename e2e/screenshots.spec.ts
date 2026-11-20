@@ -12,6 +12,13 @@ test("capture product screenshots", async ({ browser }) => {
   // Let the hero demo reach the moment the plan is approved and ticked.
   await landing.waitForTimeout(13_800);
   await landing.screenshot({ path: out("landing") });
+  await landing.setViewportSize({ width: 390, height: 844 });
+  await landing.waitForTimeout(800);
+  await landing.screenshot({ path: out("landing-mobile"), clip: { x: 0, y: 0, width: 390, height: 590 } });
+  await landing.goto("/login");
+  await landing.setViewportSize({ width: 1440, height: 900 });
+  await landing.getByLabel("Email address").waitFor({ timeout: 90_000 });
+  await landing.screenshot({ path: out("login") });
   await landing.close();
 
   const asha = await signUp(browser, "Asha Rao");
@@ -34,7 +41,6 @@ test("capture product screenshots", async ({ browser }) => {
   await send(a, "@Planner make a checklist for the first day: ride tram 28, visit the castle, dinner in Alfama. Ben Okafor books dinner.");
   const proposal = ben.page.getByTestId("action-card").last();
   await expect(proposal).toHaveAttribute("data-status", "pending", { timeout: AI_TIMEOUT });
-  await a.screenshot({ path: out("proposal") });
   await proposal.getByRole("button", { name: "Approve" }).click();
   await expect(a.getByTestId("tasks-card").last()).toBeVisible({ timeout: 60_000 });
   await a.getByTestId("tasks-card").last().getByRole("checkbox").first().click();
@@ -47,7 +53,6 @@ test("capture product screenshots", async ({ browser }) => {
   await poll.getByRole("button").first().click();
   await a.waitForTimeout(2500);
   await a.screenshot({ path: out("space") });
-  await ben.page.screenshot({ path: out("space-second-person") });
 
   await a.goto("/app/agents");
   await expect(a.getByTestId("agent-card").first()).toBeVisible();
@@ -57,6 +62,12 @@ test("capture product screenshots", async ({ browser }) => {
   await a.getByLabel("Short description").fill("Suggests day plans within the group budget.");
   await a.getByLabel("Persona and instructions").fill("You are the group's travel concierge. Suggest concrete plans in two or three sentences, within the budget in space memory.");
   await a.screenshot({ path: out("studio") });
+  await a.goto("/app");
+  await expect(a.getByRole("heading", { name: /Asha/ })).toBeVisible();
+  await a.screenshot({ path: out("home") });
+  await a.goto("/app/settings");
+  await expect(a.getByLabel("Display name")).toBeVisible();
+  await a.screenshot({ path: out("settings") });
 
   const mobile = await asha.context.newPage();
   await mobile.setViewportSize({ width: 390, height: 844 });
