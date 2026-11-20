@@ -162,6 +162,36 @@ all go through Nexconn. Agents are real Nexconn users that the server registers 
 | `/v4/group-channel/message/update`, `/v4/direct-channel/message/update` | Editing a pending proposal in place |
 | `/v4/channel-type/message/metadata/set` | Checklist ticks, assignees, due dates, votes, proposal status |
 
+### Custom message types
+
+Registered with `NCEngine.registerCustomMessages` on every client and sent by the server as the
+agent:
+
+| Type | Stored | Counts as unread | Purpose |
+| --- | --- | --- | --- |
+| `AGV:Action` | Yes | Yes | A proposal (checklist, poll or memory update) waiting for Approve, Edit or Dismiss |
+| `AGV:Tasks` | Yes | Yes | An approved checklist; ticks, assignees and due dates live in message metadata |
+| `AGV:Poll` | Yes | Yes | An approved poll; votes live in message metadata |
+| `AGV:Notice` | Yes | No | Visible notices, such as an agent that couldn't finish |
+| `AGV:AgentState` | No (status) | No | "Researcher is searching Wikipedia for ...", and the id of the stream being written |
+| `AGV:Typing` | No (status) | No | Typing indicator in group channels |
+
+Card state uses a revision number: each client keeps the highest revision among the state it
+fetched, the metadata Nexconn pushed, and its own optimistic update, so late or repeated events
+never roll a card back.
+
+### Reliability
+
+- Connect retries with backoff on transient errors and asks the server for a fresh token when
+  Nexconn reports an expired one; it also retries automatically when the browser comes back online.
+- After a reconnect the channel list and the open conversation are reloaded, so nothing sent while
+  offline is missed.
+- Sends are optimistic: a message appears at once, and a failed one offers **Retry** and **Discard**.
+- The server signs every Platform Chat API call and fails over between the primary and backup API
+  domains.
+- Agents' messages that can't stream fall back to a normal text message; a failed run posts a
+  visible notice instead of failing silently.
+
 Not used on purpose: console webhooks (the client calls the app's API after sending, and the server
 checks membership before any agent runs), built-in translation (Gemini translates instead) and paid
 moderation.
