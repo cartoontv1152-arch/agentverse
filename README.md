@@ -292,6 +292,19 @@ Clerk, Gemini via `@google/genai`, Neon Postgres with Drizzle ORM, Vercel Blob f
 
 ## Run it locally
 
+**You need:** Node.js 22 or newer, and accounts for the services below (all have free tiers).
+
+1. **Neon Postgres:** create a project; copy the pooled and direct connection strings into
+   `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+2. **Clerk:** create an application with email and password (and Google, if you like); copy the
+   publishable and secret keys. Sign-in lives at `/login` and sign-up at `/signup`.
+3. **Nexconn:** create an app in the Singapore data center; copy the App Key and App Secret. Use
+   `https://api.sg-light-api.com` as the API base. Streaming messages must be enabled for the app.
+4. **Gemini:** create an API key in Google AI Studio and pick a model for `GEMINI_MODEL`.
+5. **Vercel Blob** (optional locally): a read-write token for avatar uploads.
+
+Then:
+
 ```bash
 npm install
 cp .env.example .env.local           # or: vercel env pull .env.local --yes
