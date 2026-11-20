@@ -1,18 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Funnel_Display, Funnel_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
-const ui = Funnel_Sans({
+// Funnel Sans and Funnel Display (SIL Open Font License), self-hosted so builds never depend
+// on reaching Google Fonts. Latin subset, variable weight 300-800.
+const ui = localFont({
+  src: "./fonts/FunnelSans-Variable.woff2",
+  weight: "300 800",
   variable: "--font-ui",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const display = Funnel_Display({
+const display = localFont({
+  src: "./fonts/FunnelDisplay-Variable.woff2",
+  weight: "300 800",
   variable: "--font-display-face",
-  subsets: ["latin"],
   display: "swap",
 });
 

@@ -244,6 +244,24 @@
   }
 }
 
+/* Packets moving along the Nexconn diagram wires (landing page). */
+@keyframes wire-x {
+  from {
+    left: 0;
+  }
+  to {
+    left: calc(100% - 6px);
+  }
+}
+@keyframes wire-y {
+  from {
+    top: 0;
+  }
+  to {
+    top: calc(100% - 6px);
+  }
+}
+
 /* Message body typography (rendered Markdown subset) */
 .prose-chat p + p,
 .prose-chat p + ul,

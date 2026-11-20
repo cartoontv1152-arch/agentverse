@@ -12,11 +12,11 @@ export function LogoMark({ className = "size-7", tone = "default" }: { className
       <defs>
         <mask id={`gap-${id}`} maskUnits="userSpaceOnUse">
           <rect width="32" height="32" fill="#fff" />
-          <rect x="11" y="4" width="20" height="20" rx="6.5" fill="#000" />
+          <rect x="12" y="3" width="19" height="19" rx="6" fill="#000" />
         </mask>
       </defs>
-      <circle cx="11" cy="17" r="8" fill={person} mask={`url(#gap-${id})`} />
-      <rect x="13" y="6" width="16" height="16" rx="4.5" fill="#3554e0" />
+      <circle cx="10" cy="19" r="7.5" fill={person} mask={`url(#gap-${id})`} />
+      <rect x="14" y="5" width="15" height="15" rx="4.25" fill="#3554e0" />
     </svg>
   );
 }
