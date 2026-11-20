@@ -1,12 +1,26 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-/** Exposes the request path to server layouts (used to return people to the page they wanted after login). */
-export function proxy(request: NextRequest) {
-  const headers = new Headers(request.headers);
-  headers.set("x-pathname", request.nextUrl.pathname + request.nextUrl.search);
-  return NextResponse.next({ request: { headers } });
-}
+/**
+ * Clerk reads the session on every page and API request. Access control itself lives in each
+ * resource (route handlers call requireUser(), the /app layout checks the session); this only
+ * improves the redirect, sending signed-out visits to /login with `next` so people come back
+ * to the page they asked for.
+ */
+export default clerkMiddleware(async (auth, req) => {
+  const path = req.nextUrl.pathname;
+  if (path !== "/app" && !path.startsWith("/app/")) return;
+  const { userId } = await auth();
+  if (userId) return;
+  const login = new URL("/login", req.url);
+  login.searchParams.set("next", path + req.nextUrl.search);
+  return NextResponse.redirect(login);
+});
 
 export const config = {
-  matcher: ["/app/:path*"],
+  matcher: [
+    // Skip Next internals and static files unless they appear in search params.
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|txt)).*)",
+    "/(api|trpc)(.*)",
+  ],
 };

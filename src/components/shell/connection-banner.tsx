@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WifiOff, RotateCw } from "lucide-react";
+import { Loader2, MonitorSmartphone, RotateCw, WifiOff } from "lucide-react";
 import { useChat } from "@/client/chat/store";
 import { retryConnect } from "@/client/chat/engine";
 
@@ -14,16 +14,17 @@ export function ConnectionBanner() {
   if (connection === "connected" || connection === "idle" || connection === "connecting") return null;
 
   const messages: Record<string, string> = {
-    reconnecting: "Reconnecting to chat. Messages will appear when the connection is back.",
-    suspended: "You're offline. We'll reconnect automatically when your network returns.",
-    kicked: "You signed in to AgentVerse somewhere else, so this tab was disconnected.",
-    error: `Couldn't connect to chat${code ? ` (code ${code})` : ""}.`,
+    reconnecting: "Reconnecting to chat. New messages will appear when the connection is back.",
+    suspended: "You're offline. We'll reconnect as soon as your network returns.",
+    kicked: "AgentVerse is open in another tab or device, so this tab was disconnected.",
+    error: `Couldn't connect to chat${code ? ` (code ${code})` : ""}. We'll keep trying.`,
   };
   const canRetry = connection === "kicked" || connection === "error";
+  const Icon = connection === "kicked" ? MonitorSmartphone : connection === "reconnecting" ? Loader2 : WifiOff;
 
   return (
-    <div role="status" className="flex items-center gap-3 border-b border-signal/25 bg-signal/6 px-4 py-2 text-sm text-ink">
-      <WifiOff aria-hidden className="size-4 shrink-0 text-signal" />
+    <div role="status" className="flex animate-fade items-center gap-3 border-b border-signal/20 bg-[#fdf1f0] px-4 py-2 text-sm text-ink">
+      <Icon aria-hidden className={`size-4 shrink-0 text-signal ${connection === "reconnecting" ? "animate-spin" : ""}`} />
       <p className="flex-1">{messages[connection]}</p>
       {canRetry ? (
         <button
@@ -34,7 +35,7 @@ export function ConnectionBanner() {
             await retryConnect().catch(() => undefined);
             setRetrying(false);
           }}
-          className="inline-flex items-center gap-1.5 rounded-control px-2 py-1 font-medium text-accent hover:bg-accent/8"
+          className="inline-flex items-center gap-1.5 rounded-control px-2.5 py-1 font-semibold text-accent transition-colors hover:bg-accent/8"
         >
           <RotateCw aria-hidden className={`size-3.5 ${retrying ? "animate-spin" : ""}`} />
           {connection === "kicked" ? "Use this tab" : "Try again"}

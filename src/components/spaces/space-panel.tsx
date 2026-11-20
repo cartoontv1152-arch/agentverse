@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button, IconButton } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import type { SpaceDetail, Usage } from "./types";
 
 export type PanelTab = "people" | "agents" | "memory" | "settings";
@@ -24,22 +25,6 @@ interface MemoryItem {
   agentName: string | null;
 }
 
-function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 ${checked ? "bg-accent" : "bg-ink/20"}`}
-    >
-      <span className={`absolute left-0 top-0.5 size-4 rounded-full bg-paper shadow transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
-    </button>
-  );
-}
-
 function Meter({ label, usage }: { label: string; usage: Usage }) {
   const pct = Math.min(100, Math.round((usage.used / usage.limit) * 100));
   const near = pct >= 80;
@@ -51,8 +36,8 @@ function Meter({ label, usage }: { label: string; usage: Usage }) {
           {usage.used} of {usage.limit}
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink/8" role="meter" aria-valuenow={usage.used} aria-valuemin={0} aria-valuemax={usage.limit} aria-label={label}>
-        <div className={`h-full ${near ? "bg-signal" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/6" role="meter" aria-valuenow={usage.used} aria-valuemin={0} aria-valuemax={usage.limit} aria-label={label}>
+        <div className={`h-full rounded-full transition-[width] duration-500 ${near ? "bg-signal" : "bg-accent"}`} style={{ width: `${pct}%` }} />
       </div>
       {usage.resetsAt && near ? (
         <p className="mt-1 text-2xs text-ink/55">Frees up from {new Date(usage.resetsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</p>
@@ -75,14 +60,14 @@ function PeopleTab({ detail, onInvite, reload }: { detail: SpaceDetail; onInvite
       </Button>
       <ul className="flex flex-col gap-0.5">
         {detail.members.map((m) => (
-          <li key={m.id} className="group flex items-center gap-3 rounded-control px-2 py-1.5 hover:bg-ink/4">
+          <li key={m.id} className="group flex items-center gap-3 rounded-control px-2 py-2 transition-colors hover:bg-paper">
             <Avatar name={m.name} src={m.avatarUrl} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
                 {m.name}
                 {m.id === me.id ? <span className="font-normal text-ink/50"> (you)</span> : null}
               </p>
-              {m.role === "owner" ? <p className="text-2xs text-ink/50">Owner</p> : null}
+              <p className="text-2xs text-ink/50">{m.role === "owner" ? "Owner" : "Member"}</p>
             </div>
             {m.id !== me.id ? (
               <Link href={`/app/dm/${m.nexconnId}`} aria-label={`Message ${m.name}`} title="Message" className="rounded-control p-1.5 text-ink/50 hover:bg-ink/6 hover:text-ink">
@@ -150,12 +135,12 @@ function AgentsTab({ detail, reload }: { detail: SpaceDetail; reload: () => void
       <ul className="flex flex-col gap-1">
         {detail.agents.length === 0 ? <li className="text-sm text-ink/55">No agents in this space. Add one below.</li> : null}
         {detail.agents.map((a) => (
-          <li key={a.id} className="rounded-control border border-ink/10 bg-surface px-3 py-2.5">
+          <li key={a.id} className={`rounded-panel border border-ink/8 bg-surface px-3 py-3 transition-opacity ${a.enabled ? "" : "opacity-70"}`}>
             <div className="flex items-center gap-3">
-              <Avatar name={a.name} src={a.avatarUrl} kind="agent" size="sm" />
+              <Avatar name={a.name} src={a.avatarUrl} kind="agent" handle={a.handle} seed={a.nexconnId} size="md" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">@{a.handle}</p>
-                <p className="truncate text-2xs text-ink/55">{a.tagline || (a.kind === "custom" ? "Custom agent" : "")}</p>
+                <p className="truncate text-sm font-semibold">@{a.handle}</p>
+                <p className="line-clamp-2 text-2xs text-ink/55">{a.tagline || (a.kind === "custom" ? "Custom agent" : "")}</p>
               </div>
               <Switch
                 label={`${a.name} responds in this space`}
@@ -164,8 +149,8 @@ function AgentsTab({ detail, reload }: { detail: SpaceDetail; reload: () => void
                 onChange={(v) => act(() => api(`/api/spaces/${detail.space.id}/agents/${a.id}`, { method: "PATCH", json: { enabled: v } }), a.id, v ? `${a.name} will respond again.` : `${a.name} is paused here.`)}
               />
             </div>
-            <div className="mt-2 flex items-center gap-3 pl-10 text-2xs">
-              <span className={a.enabled ? "text-accent" : "text-ink/50"}>{a.enabled ? "Responds" : "Paused"}</span>
+            <div className="mt-2.5 flex items-center gap-3 pl-12 text-2xs font-medium">
+              <span className={a.enabled ? "text-success" : "text-ink/50"}>{a.enabled ? "Responds" : "Paused"}</span>
               <Link href={`/app/agent/${a.id}`} className="text-ink/60 hover:text-ink hover:underline">
                 Message privately
               </Link>
@@ -192,8 +177,8 @@ function AgentsTab({ detail, reload }: { detail: SpaceDetail; reload: () => void
         ) : (
           <ul className="flex flex-col gap-1">
             {available.map((a) => (
-              <li key={a.id} className="flex items-center gap-3 rounded-control px-2 py-1.5 hover:bg-ink/4">
-                <Avatar name={a.name} src={a.avatarUrl} kind="agent" size="sm" />
+              <li key={a.id} className="flex items-center gap-3 rounded-control px-2 py-2 transition-colors hover:bg-paper">
+                <Avatar name={a.name} src={a.avatarUrl} kind="agent" handle={a.handle} seed={a.id} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">@{a.handle}</p>
                   <p className="truncate text-2xs text-ink/55">{a.tagline}</p>
@@ -257,7 +242,7 @@ export function MemoryTab({ spaceId, version }: { spaceId: string; version: numb
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-ink/60">Agents read these facts and decisions before answering in this space.</p>
-      <form onSubmit={add} className="flex flex-col gap-2 rounded-control border border-ink/12 bg-surface p-3">
+      <form onSubmit={add} className="flex flex-col gap-2.5 rounded-panel border border-ink/8 bg-paper p-3">
         <div className="flex gap-1" role="radiogroup" aria-label="Memory type">
           {(["decision", "fact"] as const).map((k) => (
             <button
@@ -266,7 +251,7 @@ export function MemoryTab({ spaceId, version }: { spaceId: string; version: numb
               role="radio"
               aria-checked={kind === k}
               onClick={() => setKind(k)}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${kind === k ? "bg-ink text-paper" : "text-ink/65 hover:bg-ink/6"}`}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${kind === k ? "bg-ink text-paper" : "text-ink/60 hover:bg-ink/6"}`}
             >
               {k === "decision" ? "Decision" : "Fact"}
             </button>
@@ -284,9 +269,9 @@ export function MemoryTab({ spaceId, version }: { spaceId: string; version: numb
       ) : (
         <ul className="flex flex-col gap-2" data-testid="memory-list">
           {items.map((m) => (
-            <li key={m.id} className="rounded-control border border-ink/10 bg-surface px-3 py-2.5">
+            <li key={m.id} className="animate-fade rounded-panel border border-ink/8 bg-surface px-3 py-2.5">
               <div className="flex items-start gap-2">
-                <span className={`mt-0.5 shrink-0 rounded-chip px-1.5 text-2xs font-medium ${m.kind === "decision" ? "bg-accent/12 text-accent" : "bg-ink/8 text-ink/70"}`}>
+                <span className={`mt-0.5 shrink-0 rounded-chip px-1.5 py-px text-2xs font-semibold ${m.kind === "decision" ? "bg-[#e5f5ef] text-[#13724f]" : "bg-ink/6 text-ink/65"}`}>
                   {m.kind === "decision" ? "Decision" : "Fact"}
                 </span>
                 {editing?.id === m.id ? (
@@ -406,7 +391,7 @@ function SettingsTab({ detail, reload }: { detail: SpaceDetail; reload: () => vo
             ["auto", "Also answer open questions", "An agent may pick up a question nobody addressed, if it clearly fits its skills."],
           ] as const
         ).map(([value, label, hint]) => (
-          <label key={value} className={`flex cursor-pointer gap-3 rounded-control border px-3 py-2.5 ${detail.space.replyMode === value ? "border-accent bg-accent/5" : "border-ink/12"}`}>
+          <label key={value} className={`flex cursor-pointer gap-3 rounded-panel border px-3 py-2.5 transition-colors ${detail.space.replyMode === value ? "border-accent bg-accent/[0.05]" : "border-ink/10 hover:border-ink/20"}`}>
             <input
               type="radio"
               name="replyMode"
@@ -502,16 +487,16 @@ export function SpacePanel({
     ["settings", "Settings"],
   ];
   return (
-    <aside aria-label="Space details" className="flex h-full flex-col bg-paper">
-      <div className="flex h-14 shrink-0 items-center gap-1 border-b border-ink/10 px-2">
-        <div role="tablist" aria-label="Space panel" className="flex min-w-0 flex-1 gap-0.5 overflow-x-auto">
+    <aside aria-label="Space details" className="flex h-full flex-col bg-surface">
+      <div className="flex h-14 shrink-0 items-center gap-1 border-b border-ink/8 px-3">
+        <div role="tablist" aria-label="Space panel" className="flex min-w-0 flex-1 gap-0.5 overflow-x-auto rounded-control bg-paper p-0.5">
           {tabs.map(([key, label]) => (
             <button
               key={key}
               role="tab"
               aria-selected={tab === key}
               onClick={() => onTab(key)}
-              className={`shrink-0 rounded-control px-2.5 py-1.5 text-xs font-medium ${tab === key ? "bg-ink text-paper" : "text-ink/65 hover:bg-ink/6"}`}
+              className={`flex-1 shrink-0 rounded-[7px] px-2 py-1.5 text-xs font-semibold transition-[background-color,color,box-shadow] ${tab === key ? "bg-surface text-ink shadow-lift" : "text-ink/55 hover:text-ink"}`}
             >
               {label}
             </button>
@@ -521,7 +506,7 @@ export function SpacePanel({
           <X className="size-4" />
         </IconButton>
       </div>
-      <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div role="tabpanel" className="min-h-0 flex-1 animate-fade overflow-y-auto p-4" key={tab}>
         {tab === "people" ? <PeopleTab detail={detail} onInvite={onInvite} reload={reload} /> : null}
         {tab === "agents" ? <AgentsTab detail={detail} reload={reload} /> : null}
         {tab === "memory" ? <MemoryTab spaceId={detail.space.id} version={memoryVersion} /> : null}

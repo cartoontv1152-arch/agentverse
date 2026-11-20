@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import type { ChatMessage } from "@/client/chat/store";
+import type { HUES } from "@/lib/agent-visual";
 import {
   ACTION_STATE_KEY,
   POLL_KEY_PREFIX,
@@ -19,6 +20,9 @@ import {
   type TaskItemState,
   type TasksCardContent,
 } from "@/lib/message-types";
+
+/** Colours of the agent that posted the card. */
+export type Tint = (typeof HUES)[keyof typeof HUES];
 
 export interface CardPerson {
   id: string;
@@ -50,7 +54,7 @@ function useCardState<T>(cardId: string | undefined) {
   return { state, error };
 }
 
-const cardFrame = "mt-1.5 max-w-xl overflow-hidden rounded-panel border border-ink/14 bg-surface";
+const cardFrame = "mt-1.5 max-w-xl overflow-hidden rounded-panel border border-ink/10 bg-surface shadow-[0_1px_2px_rgb(22_26_44/0.04)]";
 
 /* ---------------------------------------------------------------------------------------------
  * Checklist
@@ -67,7 +71,7 @@ function formatDue(due: string): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-export function TasksCard({ message, people }: { message: ChatMessage; people: CardPerson[] }) {
+export function TasksCard({ message, people, tint }: { message: ChatMessage; people: CardPerson[]; tint: Tint }) {
   const content = message.content as unknown as TasksCardContent;
   const { state, error } = useCardState<TasksState>(content.cardId);
   const [local, setLocal] = useState<Record<string, TaskItemState>>({});
@@ -110,20 +114,22 @@ export function TasksCard({ message, people }: { message: ChatMessage; people: C
 
   return (
     <div className={cardFrame} data-testid="tasks-card">
-      <div className="flex items-center gap-2 border-b border-ink/10 px-4 py-3">
-        <ListChecks aria-hidden className="size-4 text-accent" />
-        <h3 className="min-w-0 flex-1 truncate font-semibold">{content.title}</h3>
-        <span className="text-xs text-ink/55" aria-live="polite">
+      <div className="flex items-center gap-2.5 px-4 py-3">
+        <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-[8px]" style={{ backgroundColor: tint.soft, color: tint.text }}>
+          <ListChecks className="size-4" />
+        </span>
+        <h3 className="min-w-0 flex-1 truncate font-display text-[1.02rem] font-semibold">{content.title}</h3>
+        <span className="text-xs font-medium text-ink/55" aria-live="polite">
           {doneCount} of {items.length} done
         </span>
       </div>
-      <div aria-hidden className="h-0.5 bg-ink/6">
-        <div className="h-full bg-accent transition-[width] duration-300" style={{ width: `${items.length ? (doneCount / items.length) * 100 : 0}%` }} />
+      <div aria-hidden className="h-1 bg-ink/6">
+        <div className="h-full rounded-r-full transition-[width] duration-500 ease-out" style={{ width: `${items.length ? (doneCount / items.length) * 100 : 0}%`, backgroundColor: tint.bg }} />
       </div>
       {error ? <p className="px-4 py-2 text-sm text-signal">{error}</p> : null}
-      <ul className="divide-y divide-ink/8">
+      <ul className="divide-y divide-ink/6">
         {items.map((item) => (
-          <li key={item.key} className="flex items-start gap-3 px-4 py-2.5">
+          <li key={item.key} className="flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-paper/60">
             <button
               type="button"
               role="checkbox"
@@ -131,14 +137,15 @@ export function TasksCard({ message, people }: { message: ChatMessage; people: C
               aria-label={`${item.d === 1 ? "Mark not done" : "Mark done"}: ${item.text}`}
               disabled={!item.id || busy === item.key}
               onClick={() => patch(item, { done: item.d !== 1 }, { d: item.d === 1 ? 0 : 1 })}
-              className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-[5px] border transition-colors ${
-                item.d === 1 ? "border-accent bg-accent text-paper" : "border-ink/30 bg-surface hover:border-accent"
+              className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-[background-color,border-color,transform] duration-200 active:scale-90 ${
+                item.d === 1 ? "" : "border-ink/25 bg-surface hover:border-ink/45"
               } disabled:opacity-60`}
+              style={item.d === 1 ? { backgroundColor: tint.bg, borderColor: tint.bg, color: tint.fg } : undefined}
             >
               {item.d === 1 ? <Check aria-hidden className="size-3.5" strokeWidth={3} /> : null}
             </button>
             <div className="min-w-0 flex-1">
-              <p className={`text-sm ${item.d === 1 ? "text-ink/50 line-through decoration-ink/35" : "text-ink"}`}>{item.text}</p>
+              <p className={`text-sm transition-colors ${item.d === 1 ? "text-ink/45 line-through decoration-ink/30" : "text-ink"}`}>{item.text}</p>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-ink/55">
                 <label className="inline-flex items-center gap-1">
                   <span className="sr-only">Assignee for {item.text}</span>
@@ -193,7 +200,7 @@ interface PollState {
   options: { id: string; key: string; text: string; count: number; voters: { nexconnId: string; name: string }[] }[];
 }
 
-export function PollCard({ message, me, nameOf }: { message: ChatMessage; me: string; nameOf: (nexconnId: string) => string | null }) {
+export function PollCard({ message, me, nameOf, tint }: { message: ChatMessage; me: string; nameOf: (nexconnId: string) => string | null; tint: Tint }) {
   const content = message.content as unknown as PollCardContent;
   const { state } = useCardState<PollState>(content.cardId);
   const [local, setLocal] = useState<Record<string, PollOptionState>>({});
@@ -235,10 +242,12 @@ export function PollCard({ message, me, nameOf }: { message: ChatMessage; me: st
 
   return (
     <div className={cardFrame} data-testid="poll-card">
-      <div className="flex items-start gap-2 border-b border-ink/10 px-4 py-3">
-        <Vote aria-hidden className="mt-0.5 size-4 text-accent" />
+      <div className="flex items-start gap-2.5 px-4 pb-1 pt-3">
+        <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-[8px]" style={{ backgroundColor: tint.soft, color: tint.text }}>
+          <Vote className="size-4" />
+        </span>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold">{content.question}</h3>
+          <h3 className="font-display text-[1.02rem] font-semibold">{content.question}</h3>
           <p className="text-2xs text-ink/55" aria-live="polite">
             {voters.size} {voters.size === 1 ? "person" : "people"} voted{content.multi ? ", pick any" : ", pick one"}
           </p>
@@ -256,16 +265,20 @@ export function PollCard({ message, me, nameOf }: { message: ChatMessage; me: st
                 aria-pressed={mine}
                 disabled={!o.id || busy}
                 onClick={() => vote(o)}
-                className={`relative flex w-full items-center gap-3 overflow-hidden rounded-control border px-3 py-2 text-left text-sm transition-colors disabled:cursor-wait ${
-                  mine ? "border-accent" : "border-ink/14 hover:border-ink/35"
+                className={`relative flex w-full items-center gap-3 overflow-hidden rounded-control border px-3 py-2.5 text-left text-sm transition-[border-color,transform] duration-150 active:scale-[0.99] disabled:cursor-wait ${
+                  mine ? "" : "border-ink/12 hover:border-ink/30"
                 }`}
+                style={mine ? { borderColor: tint.bg } : undefined}
               >
-                <span aria-hidden className={`absolute inset-y-0 left-0 ${mine ? "bg-accent/14" : "bg-ink/6"} transition-[width] duration-300`} style={{ width: `${pct}%` }} />
-                <span className={`relative grid size-4 shrink-0 place-items-center border ${content.multi ? "rounded-[4px]" : "rounded-full"} ${mine ? "border-accent bg-accent text-paper" : "border-ink/35"}`}>
+                <span aria-hidden className="absolute inset-y-0 left-0 transition-[width] duration-500 ease-out" style={{ width: `${pct}%`, backgroundColor: mine ? tint.soft : "rgb(22 26 44 / 0.05)" }} />
+                <span
+                  className={`relative grid size-4 shrink-0 place-items-center border-[1.5px] ${content.multi ? "rounded-[4px]" : "rounded-full"} ${mine ? "" : "border-ink/30"}`}
+                  style={mine ? { backgroundColor: tint.bg, borderColor: tint.bg, color: tint.fg } : undefined}
+                >
                   {mine ? <Check aria-hidden className="size-3" strokeWidth={3} /> : null}
                 </span>
                 <span className="relative min-w-0 flex-1">
-                  <span className="block truncate font-medium">{o.text}</span>
+                  <span className="block truncate font-semibold">{o.text}</span>
                   {names ? <span className="block truncate text-2xs text-ink/55">{names}</span> : null}
                 </span>
                 <span className="relative shrink-0 tabular-nums text-ink/70">
@@ -445,7 +458,7 @@ const ACTION_TITLES: Record<ProposalPayload["type"], { verb: string; icon: typeo
   memory: { verb: "Save to space memory?", icon: BookmarkPlus },
 };
 
-export function ActionCard({ message }: { message: ChatMessage }) {
+export function ActionCard({ message, tint }: { message: ChatMessage; tint: Tint }) {
   const content = message.content as unknown as ActionCardContent;
   const { state } = useCardState<ActionFetched>(content.cardId);
   const [editing, setEditing] = useState(false);
@@ -483,10 +496,13 @@ export function ActionCard({ message }: { message: ChatMessage }) {
 
   const resolved = status.s !== "pending";
   return (
-    <div className={`${cardFrame} ${resolved ? "" : "border-accent/45"}`} data-testid="action-card" data-status={status.s}>
-      <div className="flex items-center gap-2 border-b border-ink/10 px-4 py-2.5">
-        <Icon aria-hidden className="size-4 text-accent" />
+    <div className={cardFrame} style={resolved ? undefined : { borderColor: tint.bg, boxShadow: `0 0 0 3px ${tint.soft}` }} data-testid="action-card" data-status={status.s}>
+      <div className="flex items-center gap-2.5 border-b border-ink/8 px-4 py-2.5">
+        <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-[8px]" style={{ backgroundColor: tint.soft, color: tint.text }}>
+          <Icon className="size-4" />
+        </span>
         <h3 className="flex-1 text-sm font-semibold">{meta.verb}</h3>
+        {!resolved ? <span className="rounded-full bg-ink/5 px-2 py-0.5 text-2xs font-medium text-ink/55">Waiting for approval</span> : null}
         {content.edited ? <span className="text-2xs text-ink/45">Edited</span> : null}
       </div>
       <div className="px-4 py-3">
@@ -497,7 +513,7 @@ export function ActionCard({ message }: { message: ChatMessage }) {
         )}
       </div>
       {!editing ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-ink/10 bg-paper/60 px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 border-t border-ink/8 bg-paper/70 px-4 py-2.5">
           {status.s === "pending" ? (
             <>
               <Button size="sm" variant="primary" loading={busy === "approve"} disabled={busy !== null} onClick={() => decide("approve")}>
@@ -509,10 +525,10 @@ export function ActionCard({ message }: { message: ChatMessage }) {
               <Button size="sm" variant="ghost" loading={busy === "dismiss"} disabled={busy !== null} onClick={() => decide("dismiss")}>
                 <X aria-hidden className="size-4" /> Dismiss
               </Button>
-              <span className="ml-auto text-2xs text-ink/50">Nothing happens until someone approves</span>
+              <span className="ml-auto hidden text-2xs text-ink/45 sm:inline">Nothing happens until someone approves</span>
             </>
           ) : status.s === "approved" ? (
-            <p className="flex items-center gap-1.5 text-sm text-accent">
+            <p className="flex animate-fade items-center gap-1.5 text-sm font-semibold text-success">
               <CheckCircle2 aria-hidden className="size-4" /> Approved{status.by ? ` by ${status.by}` : ""}
             </p>
           ) : status.s === "dismissed" ? (

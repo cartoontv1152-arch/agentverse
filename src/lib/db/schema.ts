@@ -18,15 +18,24 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    /** Clerk user id (user_...). Clerk owns sign-in; this row owns the app profile and Nexconn identity. */
+    clerkId: text("clerk_id"),
     email: text("email").notNull(),
     name: text("name").notNull(),
-    passwordHash: text("password_hash").notNull(),
+    /** False until the person confirms their display name (Clerk sign-up may not collect one). */
+    nameConfirmed: boolean("name_confirmed").notNull().default(true),
+    /** Legacy password logins (before Clerk). Dropped by a later migration. */
+    passwordHash: text("password_hash"),
     avatarUrl: text("avatar_url"),
     nexconnId: text("nexconn_id").notNull(),
     nexconnToken: text("nexconn_token"),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("users_email_idx").on(t.email), uniqueIndex("users_nexconn_idx").on(t.nexconnId)],
+  (t) => [
+    uniqueIndex("users_email_idx").on(t.email),
+    uniqueIndex("users_nexconn_idx").on(t.nexconnId),
+    uniqueIndex("users_clerk_idx").on(t.clerkId),
+  ],
 );
 
 export const sessions = pgTable(

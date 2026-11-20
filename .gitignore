@@ -50,3 +50,6 @@ next-env.d.ts
 
 .env*.local
 probe.png
+
+!.env.example
+scripts/_*.mts

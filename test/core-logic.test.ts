@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergeMessages, messagePreview, type ChatMessage } from "@/client/chat/store";
+import { nameFromEmail } from "@/lib/names";
 import { formatSourcesFooter, parseStreamSummary, splitSourcesFooter } from "@/lib/message-types";
 import { looksLikeOpenQuestion, resolveMentionedAgents } from "@/lib/mentions";
 import { SourceRegistry, extractUrls, isPublicHttpUrl } from "@/lib/ai/research";
@@ -54,6 +55,15 @@ describe("message previews", () => {
   it("describes cards and streams", () => {
     expect(messagePreview({ type: "AGV:Tasks", content: { title: "Trip" } })).toBe("Checklist: Trip");
     expect(messagePreview({ type: "RC:StreamMsg", content: { content: "x" }, streamText: "full" })).toBe("full");
+  });
+
+  it("falls back for a stream whose first chunk is empty", () => {
+    expect(messagePreview({ type: "RC:StreamMsg", content: { content: "" } })).toBe("Sent a reply");
+  });
+
+  it("turns Markdown answers into one plain line without citations or sources", () => {
+    const text = "**Tram 28** loops through\n\nAlfama [1].\n\n**Sources**\n1. [Trams in Lisbon](https://en.wikipedia.org/wiki/Trams_in_Lisbon)";
+    expect(messagePreview({ type: "RC:TxtMsg", content: { text } })).toBe("Tram 28 loops through Alfama.");
   });
 });
 
@@ -132,5 +142,13 @@ describe("mention resolution", () => {
     expect(looksLikeOpenQuestion("What time does the museum open?")).toBe(true);
     expect(looksLikeOpenQuestion("ok?")).toBe(false);
     expect(looksLikeOpenQuestion("@Ben are you coming tonight?")).toBe(false);
+  });
+});
+
+describe("names from email", () => {
+  it("turns the local part into a readable name", () => {
+    expect(nameFromEmail("asha.rao+clerk_test@example.com")).toBe("Asha Rao");
+    expect(nameFromEmail("ben_okafor@example.com")).toBe("Ben Okafor");
+    expect(nameFromEmail("+x@example.com")).toBe("New member");
   });
 });

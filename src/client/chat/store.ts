@@ -151,13 +151,25 @@ export function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]):
   return list.sort((a, b) => a.sentTime - b.sentTime);
 }
 
+/** One line of plain text from a Markdown message: no sources footer, emphasis or extra spaces. */
+function plainLine(text: string): string {
+  return text
+    .replace(/\n\n\*\*Sources\*\*[\s\S]*$/, "")
+    .replace(/\s*\[\d{1,2}(?:\s*,\s*\d{1,2})*\]/g, "")
+    .replace(/[*_`#>]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+}
+
 export function messagePreview(m: Pick<ChatMessage, "type" | "content" | "streamText">): string {
   const c = m.content as Record<string, unknown>;
   switch (m.type) {
     case "RC:TxtMsg":
-      return String(c.text ?? c.content ?? "");
+      return plainLine(String(c.text ?? c.content ?? ""));
     case "RC:StreamMsg":
-      return String(m.streamText ?? c.content ?? "");
+      // The channel list only carries a stream's first chunk, which can be empty.
+      return plainLine(String(m.streamText || c.content || "")) || "Sent a reply";
     case "AGV:Tasks":
       return `Checklist: ${String(c.title ?? "")}`;
     case "AGV:Poll":

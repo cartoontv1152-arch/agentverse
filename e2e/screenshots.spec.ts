@@ -9,6 +9,8 @@ const out = (name: string) => `docs/screenshots/${name}.png`;
 test("capture product screenshots", async ({ browser }) => {
   const landing = await browser.newPage();
   await landing.goto("/");
+  // Let the hero demo reach the moment the plan is approved and ticked.
+  await landing.waitForTimeout(13_800);
   await landing.screenshot({ path: out("landing") });
   await landing.close();
 

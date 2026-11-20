@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .person { fill: #161a2c; }
+    @media (prefers-color-scheme: dark) { .person { fill: #f6f7f9; } }
+  </style>
+  <defs>
+    <mask id="gap" maskUnits="userSpaceOnUse">
+      <rect width="32" height="32" fill="#fff"/>
+      <rect x="12" y="3" width="19" height="19" rx="6" fill="#000"/>
+    </mask>
+  </defs>
+  <circle class="person" cx="10" cy="19" r="7.5" mask="url(#gap)"/>
+  <rect x="14" y="5" width="15" height="15" rx="4.25" fill="#3554e0"/>
+</svg>

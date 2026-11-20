@@ -1,19 +1,31 @@
+@layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
 
 /*
  * AgentVerse design tokens.
- * Four colours only: paper (background), ink (text and lines), viridian (agents and primary
- * actions), signal (errors and limits). Everything else is a tint of these.
- * Shape carries identity: people are circles, agents are squares.
+ * Cool paper, navy ink and one cobalt action colour. Each agent carries its own hue (see
+ * src/lib/agent-visual.ts) so people can tell agents apart at a glance. Shape carries identity:
+ * people are circles, agents are squares. Signal red is reserved for errors and limits.
  */
 @theme {
-  --color-paper: #f4f5f2;
-  --color-ink: #1b2420;
-  --color-accent: #0f6b57;
-  --color-signal: #b3261e;
-  --color-surface: color-mix(in oklab, #f4f5f2 35%, #ffffff);
+  --color-paper: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-ink: #161a2c;
+  --color-accent: #3554e0;
+  --color-accent-strong: #2a44c4;
+  --color-signal: #d92d20;
+  --color-success: #1e9e74;
+
+  /* Agent hues */
+  --color-cobalt: #3554e0;
+  --color-saffron: #e8a23a;
+  --color-berry: #c8457a;
+  --color-jade: #1e9e74;
+  --color-iris: #7d58d6;
+  --color-teal: #0e8fa8;
 
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), var(--font-ui), ui-sans-serif, system-ui, sans-serif;
 
   --text-2xs: 0.75rem;
   --text-2xs--line-height: 1rem;
@@ -24,21 +36,35 @@
   --text-base: 0.9375rem;
   --text-base--line-height: 1.5rem;
   --text-lg: 1.0625rem;
-  --text-lg--line-height: 1.55rem;
+  --text-lg--line-height: 1.6rem;
   --text-xl: 1.25rem;
-  --text-xl--line-height: 1.65rem;
+  --text-xl--line-height: 1.7rem;
   --text-2xl: 1.625rem;
   --text-2xl--line-height: 2rem;
   --text-3xl: 2.125rem;
-  --text-3xl--line-height: 2.5rem;
+  --text-3xl--line-height: 2.45rem;
   --text-4xl: 3rem;
-  --text-4xl--line-height: 3.25rem;
+  --text-4xl--line-height: 3.2rem;
 
-  --radius-chip: 4px;
-  --radius-control: 6px;
-  --radius-panel: 10px;
+  --radius-chip: 6px;
+  --radius-control: 9px;
+  --radius-panel: 14px;
+  --radius-sheet: 22px;
+
+  --shadow-float: 0 1px 2px rgb(22 26 44 / 0.06), 0 12px 32px -12px rgb(22 26 44 / 0.28);
+  --shadow-lift: 0 1px 1px rgb(22 26 44 / 0.04), 0 4px 14px -6px rgb(22 26 44 / 0.16);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
   --animate-working: working 1.4s ease-in-out infinite;
+  --animate-rise: rise 0.42s var(--ease-out-soft) both;
+  --animate-pop: pop 0.34s var(--ease-out-soft) both;
+  --animate-fade: fade 0.3s ease-out both;
+  --animate-slide-in-left: slide-in-left 0.32s var(--ease-out-soft) both;
+  --animate-slide-in-right: slide-in-right 0.32s var(--ease-out-soft) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-caret: caret 1s steps(1) infinite;
+
   @keyframes working {
     0%,
     100% {
@@ -48,66 +74,192 @@
       opacity: 1;
     }
   }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes caret {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {
-:root {
-  color-scheme: light;
-  --paper: #f4f5f2;
-  --ink: #1b2420;
-  --accent: #0f6b57;
-  --signal: #b3261e;
-}
+  :root {
+    color-scheme: light;
+    --paper: #f6f7f9;
+    --ink: #161a2c;
+    --accent: #3554e0;
+    --signal: #d92d20;
+  }
 
-html,
-body {
-  height: 100%;
-}
+  html,
+  body {
+    height: 100%;
+  }
 
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: "ss01" on;
-}
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-::selection {
-  background: color-mix(in oklab, var(--accent) 22%, transparent);
-}
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+  p {
+    text-wrap: pretty;
+  }
 
-button,
-[role="button"] {
-  cursor: pointer;
-}
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 22%, transparent);
+  }
 
-button:disabled {
-  cursor: not-allowed;
-}
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
-/* Thin, quiet scrollbars */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--ink) 18%, transparent) transparent;
-}
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Thin, quiet scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--ink) 18%, transparent) transparent;
+  }
+
+  dialog[open] {
+    animation: pop 0.24s var(--ease-out-soft);
+  }
+  dialog::backdrop {
+    animation: fade 0.2s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
+
+@layer components {
+  /* Loading placeholder with a soft sweep. */
+  .skeleton {
+    background: linear-gradient(90deg, rgb(22 26 44 / 0.06) 25%, rgb(22 26 44 / 0.11) 37%, rgb(22 26 44 / 0.06) 63%);
+    background-size: 400% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  /* Scroll-revealed blocks on the marketing pages (see components/marketing/reveal.tsx). */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.7s var(--ease-out-soft),
+      transform 0.7s var(--ease-out-soft);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal[data-shown="true"] {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Packets moving along the Nexconn diagram wires (landing page). */
+@keyframes wire-x {
+  from {
+    left: 0;
+  }
+  to {
+    left: calc(100% - 6px);
+  }
+}
+@keyframes wire-y {
+  from {
+    top: 0;
+  }
+  to {
+    top: calc(100% - 6px);
+  }
 }
 
 /* Message body typography (rendered Markdown subset) */
@@ -134,7 +286,7 @@ button:disabled {
 .prose-chat code {
   font-size: 0.85em;
   padding: 0.05rem 0.3rem;
-  border-radius: 4px;
+  border-radius: 5px;
   background: color-mix(in oklab, var(--ink) 7%, transparent);
 }
 .prose-chat a {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { AI_TIMEOUT, agentMessages, send, signUp, waitForChat, type Person } from "./helpers";
+import { AI_TIMEOUT, agentMessages, completeClerkSignUp, confirmName, send, signUp, uniqueEmail, waitForChat, type Person } from "./helpers";
 
 /**
  * The core journey with two real people in two browser contexts, over real Nexconn realtime:
@@ -43,14 +43,12 @@ test.describe.serial("two people and their agents in one space", () => {
     await expect(b.getByRole("heading", { name: "Lisbon trip" })).toBeVisible();
     await expect(b.getByText("Asha Rao invited you to a space")).toBeVisible();
     await b.getByRole("link", { name: "Create account and join" }).click();
-    await b.getByLabel("Your name").fill("Ben Okafor");
-    const benEmail = `ben.${Date.now().toString(36)}@e2e.agentverse.test`;
-    await b.getByLabel("Email").fill(benEmail);
-    await b.getByLabel("Password").fill("correct-horse-42");
-    await b.getByRole("button", { name: "Create account" }).click();
+    const benEmail = uniqueEmail("ben");
+    await completeClerkSignUp(b, benEmail);
     await b.waitForURL(new RegExp(inviteUrl.pathname), { timeout: 90_000 });
     await b.getByRole("button", { name: "Join space" }).click();
     await b.waitForURL(new RegExp(`${spacePath}$`), { timeout: 90_000 });
+    await confirmName(b, "Ben Okafor");
     ben = { context, page: b, name: "Ben Okafor", email: benEmail };
     await expect(b.getByTestId("space-title")).toHaveText("Lisbon trip");
   });

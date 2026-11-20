@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ImageUp, Loader2, Play, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpenText, ImageUp, ListChecks, Loader2, Play, RotateCcw, Search, Trash2, Vote } from "lucide-react";
 import { api, ClientApiError, limitHint } from "@/client/api";
-import { PageHeader } from "@/components/shell/page-header";
+import { PageHeader, PageTitle } from "@/components/shell/page-header";
+import { agentVisual } from "@/lib/agent-visual";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Field, FormError, Input, Textarea } from "@/components/ui/field";
@@ -16,6 +17,7 @@ import type { ProposalPayload } from "@/lib/message-types";
 import { TOOL_INFO, type PublicAgentView } from "./types";
 
 const TOOLS = ["search", "tasks", "polls", "summarize"] as const;
+const TOOL_ICONS = { search: Search, tasks: ListChecks, polls: Vote, summarize: BookOpenText } as const;
 type Tool = (typeof TOOLS)[number];
 
 interface Draft {
@@ -42,7 +44,7 @@ function handleFrom(name: string) {
   return /^[A-Za-z]/.test(cleaned) ? cleaned.slice(0, 24) : "";
 }
 
-function TestConsole({ agentId, draft, name }: { agentId: string | null; draft: Draft; name: string }) {
+function TestConsole({ agentId, draft, name, seed }: { agentId: string | null; draft: Draft; name: string; seed: string }) {
   const [turns, setTurns] = useState<ConsoleTurn[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
@@ -104,11 +106,15 @@ function TestConsole({ agentId, draft, name }: { agentId: string | null; draft: 
   }
 
   return (
-    <section aria-labelledby="console-heading" className="flex min-h-[420px] flex-col rounded-panel border border-ink/12 bg-surface lg:h-full">
-      <div className="flex items-center gap-2 border-b border-ink/10 px-4 py-3">
-        <h2 id="console-heading" className="flex-1 text-sm font-semibold">
-          Test console
-        </h2>
+    <section aria-labelledby="console-heading" className="flex min-h-[460px] flex-col overflow-hidden rounded-sheet border border-ink/8 bg-paper lg:sticky lg:top-6 lg:h-[calc(100dvh-9rem)]">
+      <div className="flex items-center gap-2.5 border-b border-ink/8 bg-surface px-4 py-3">
+        <Avatar name={name || "Agent"} kind="agent" handle={draft.handle} seed={seed} src={draft.avatarUrl} size="sm" />
+        <div className="min-w-0 flex-1">
+          <h2 id="console-heading" className="text-sm font-semibold">
+            Test console
+          </h2>
+          <p className="truncate text-2xs text-ink/50">Real model and tools, your unsaved edits applied. Nothing is posted to a chat.</p>
+        </div>
         {turns.length ? (
           <Button size="sm" variant="ghost" onClick={() => setTurns([])} disabled={running}>
             <RotateCcw aria-hidden className="size-3.5" /> Clear
@@ -117,18 +123,18 @@ function TestConsole({ agentId, draft, name }: { agentId: string | null; draft: 
       </div>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-3" data-testid="test-console">
         {!agentId ? (
-          <p className="text-sm text-ink/60">Save the agent to start testing. Tests use the real model and tools, with your unsaved edits applied.</p>
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center"><p className="font-semibold">Save to start testing</p><p className="mt-1 max-w-xs text-sm text-ink/55">Tests use the real model and tools, with your unsaved edits applied.</p></div>
         ) : turns.length === 0 ? (
-          <p className="text-sm text-ink/60">Ask {name || "your agent"} something. Nothing is posted to any chat; proposals are shown as previews.</p>
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center"><p className="font-semibold">Ask {name || "your agent"} something</p><p className="mt-1 max-w-xs text-sm text-ink/55">Proposals show as previews here instead of cards.</p></div>
         ) : (
           <ol className="flex flex-col gap-4">
             {turns.map((t, i) => (
               <li key={i} className="flex gap-2.5">
-                <Avatar name={t.role === "user" ? "You" : name || "Agent"} kind={t.role === "agent" ? "agent" : "user"} size="sm" src={t.role === "agent" ? draft.avatarUrl : null} />
-                <div className="min-w-0 flex-1 text-sm">
+                <Avatar name={t.role === "user" ? "You" : name || "Agent"} kind={t.role === "agent" ? "agent" : "user"} handle={draft.handle} seed={seed} size="sm" src={t.role === "agent" ? draft.avatarUrl : null} />
+                <div className={`min-w-0 flex-1 animate-rise text-sm ${t.role === "agent" ? "rounded-panel rounded-tl-md bg-surface px-3 py-2 shadow-[0_1px_2px_rgb(22_26_44/0.05)]" : "pt-1"}`}>
                   {t.text ? <Markdown text={t.text} /> : null}
                   {t.proposals?.map((p, j) => (
-                    <div key={j} className="mt-2 rounded-control border border-accent/35 bg-accent/5 px-3 py-2 text-xs">
+                    <div key={j} className="mt-2 rounded-control border border-accent/25 bg-accent/5 px-3 py-2 text-xs">
                       <span className="font-semibold text-accent">Would propose:</span> {p.summary}
                     </div>
                   ))}
@@ -156,7 +162,7 @@ function TestConsole({ agentId, draft, name }: { agentId: string | null; draft: 
         )}
       </div>
       <form
-        className="flex gap-2 border-t border-ink/10 p-3"
+        className="flex gap-2 border-t border-ink/8 bg-surface p-3"
         onSubmit={(e) => {
           e.preventDefault();
           void run();
@@ -190,6 +196,8 @@ export function Studio({ agent }: { agent: PublicAgentView | null }) {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const seed = agent?.nexconnId ?? (draft.handle || "new-agent");
+  const visual = agentVisual(draft.handle, seed);
 
   async function upload(file: File) {
     if (file.size > 2 * 1024 * 1024) return push("Images must be 2 MB or smaller.", "error");
@@ -242,15 +250,19 @@ export function Studio({ agent }: { agent: PublicAgentView | null }) {
         <Link href="/app/agents" aria-label="Back to agents" className="rounded-control p-1.5 text-ink/60 hover:bg-ink/6 hover:text-ink">
           <ArrowLeft className="size-4" />
         </Link>
-        <h1 className="truncate text-base font-semibold">{agent ? `Studio: ${agent.name}` : "Build an agent"}</h1>
+        <PageTitle title={agent ? `Studio: ${agent.name}` : "Build an agent"} subtitle={agent ? `@${agent.handle}` : "Name it, give it a persona, choose its tools"} />
       </PageHeader>
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-8 lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <form onSubmit={save} className="flex flex-col gap-5" noValidate>
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
+          <form onSubmit={save} className="flex flex-col gap-6" noValidate>
             <FormError message={formError} />
             <div className="flex items-center gap-4">
-              <Avatar name={draft.name || "Agent"} src={draft.avatarUrl} kind="agent" size="xl" />
-              <div className="flex flex-col gap-2">
+              <Avatar name={draft.name || "Agent"} src={draft.avatarUrl} kind="agent" handle={draft.handle} seed={seed} size="xl" />
+              <div className="flex flex-col items-start gap-2">
+                <p className="font-display text-lg font-semibold leading-tight">{draft.name || "Your agent"}</p>
+                <p className="-mt-1.5 text-sm font-medium" style={{ color: visual.colors.text }}>
+                  @{draft.handle || "handle"}
+                </p>
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" aria-label="Upload avatar" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
                 <Button size="sm" variant="secondary" loading={uploading} onClick={() => fileRef.current?.click()}>
                   {!uploading ? <ImageUp aria-hidden className="size-4" /> : null} Upload avatar
@@ -313,12 +325,12 @@ export function Studio({ agent }: { agent: PublicAgentView | null }) {
               )}
             </Field>
             <fieldset>
-              <legend className="mb-2 text-sm font-medium">What it may do</legend>
+              <legend className="mb-2 text-sm font-semibold">What it may do</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {TOOLS.map((tool) => {
                   const checked = draft.tools.includes(tool);
                   return (
-                    <label key={tool} className={`flex cursor-pointer gap-3 rounded-control border px-3 py-2.5 ${checked ? "border-accent bg-accent/5" : "border-ink/14 hover:border-ink/30"}`}>
+                    <label key={tool} className={`flex cursor-pointer gap-3 rounded-panel border px-3 py-3 transition-colors ${checked ? "border-accent bg-accent/[0.05]" : "border-ink/10 hover:border-ink/22"}`}>
                       <input
                         type="checkbox"
                         className="mt-1 accent-[var(--accent)]"
@@ -326,7 +338,13 @@ export function Studio({ agent }: { agent: PublicAgentView | null }) {
                         onChange={(e) => setDraft((d) => ({ ...d, tools: e.target.checked ? [...d.tools, tool] : d.tools.filter((t) => t !== tool) }))}
                       />
                       <span>
-                        <span className="block text-sm font-medium">{TOOL_INFO[tool].label}</span>
+                        <span className="flex items-center gap-1.5 text-sm font-semibold">
+                          {(() => {
+                            const Icon = TOOL_ICONS[tool];
+                            return <Icon aria-hidden className="size-3.5 text-ink/50" />;
+                          })()}
+                          {TOOL_INFO[tool].label}
+                        </span>
                         <span className="block text-2xs text-ink/55">{TOOL_INFO[tool].description}</span>
                       </span>
                     </label>
@@ -334,7 +352,7 @@ export function Studio({ agent }: { agent: PublicAgentView | null }) {
                 })}
               </div>
             </fieldset>
-            <div className="flex flex-wrap items-center gap-2 border-t border-ink/10 pt-4">
+            <div className="flex flex-wrap items-center gap-2 border-t border-ink/8 pt-5">
               <Button type="submit" variant="primary" loading={saving}>
                 {agent ? "Save changes" : "Create agent"}
               </Button>
@@ -345,7 +363,7 @@ export function Studio({ agent }: { agent: PublicAgentView | null }) {
               ) : null}
             </div>
           </form>
-          <TestConsole agentId={agent?.id ?? null} draft={draft} name={draft.name} />
+          <TestConsole agentId={agent?.id ?? null} draft={draft} name={draft.name} seed={seed} />
         </div>
       </div>
       {agent ? (

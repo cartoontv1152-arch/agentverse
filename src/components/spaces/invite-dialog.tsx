@@ -59,7 +59,7 @@ export function InviteDialog({ spaceId, spaceName, open, onClose }: { spaceId: s
           aria-label="Invite link"
           value={loading && !invite ? "Creating link…" : url}
           onFocus={(e) => e.currentTarget.select()}
-          className="h-10 min-w-0 flex-1 rounded-control border border-ink/18 bg-surface px-3 text-sm text-ink/80"
+          className="h-10 min-w-0 flex-1 rounded-control border border-ink/12 bg-paper px-3 text-sm font-medium text-ink/80 focus:border-accent focus:outline-none"
           data-testid="invite-link"
         />
         <Button
@@ -79,7 +79,7 @@ export function InviteDialog({ spaceId, spaceName, open, onClose }: { spaceId: s
           Expires {new Date(invite.expiresAt).toLocaleDateString([], { month: "long", day: "numeric" })}. Used {invite.uses} {invite.uses === 1 ? "time" : "times"}.
         </p>
       ) : null}
-      <div className="mt-5 flex flex-wrap gap-2 border-t border-ink/10 pt-4">
+      <div className="mt-5 flex flex-wrap gap-2 border-t border-ink/8 pt-4">
         <Button size="sm" variant="ghost" disabled={loading} onClick={() => regenerate(false)}>
           <RefreshCw aria-hidden className="size-3.5" /> New link
         </Button>

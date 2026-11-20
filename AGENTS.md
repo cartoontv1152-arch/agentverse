@@ -7,9 +7,10 @@ conversation, replies in the chat (streamed), and can propose actions as interac
 
 Built for the Nexconn Build Challenge 2026. Realtime messaging runs entirely on Nexconn
 (Web Chat SDK on the client, Platform Chat API on the server). AI runs on Gemini via `@google/genai`.
+Sign-in is handled by Clerk (`@clerk/nextjs` 7, Core 3).
 
 - Live: https://agentverse-nu-murex.vercel.app
-- Repo: https://github.com/imthegoodboy/agentverse (private)
+- Repo: https://github.com/cartoontv1152-arch/agentverse
 
 <!-- BEGIN:nextjs-agent-rules -->
 
@@ -25,7 +26,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### First-time user (creator)
 1. Lands on `/`, reads what the product does, chooses **Create account**.
-2. Signs up with name, email, password (validated inline; duplicate email explained).
+2. Signs up with Clerk (email + password with an emailed code, or Google). On the first visit to
+   the app a welcome dialog asks for their display name (Clerk sign-up doesn't collect one).
 3. Arrives at Home: empty state explains spaces, DMs and agents, with one primary action:
    **Create a space**.
 4. Creates a space (name, optional description). The five built-in agents join by default
@@ -83,12 +85,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - AI failure: the agent posts a visible error notice in the chat, and its status turns red.
 - Paused agents: mentioning one does nothing and a notice above the composer explains why.
 - Session expiry: API calls return 401 and the client goes to `/login?next=...`.
+- Signed in with Clerk but the app profile couldn't be created (database down): the app shows an
+  explanation with **Reload** and **Sign out** instead of looping between `/login` and `/app`.
 - Signed in elsewhere (Nexconn kick, code 31010): banner with **Use this tab**.
 
 ## Architecture
 
 ```
  Browser (Next.js client)                         Vercel functions (sin1)                 Services
+ Clerk components (sign-in, sign-up, account) ── proxy.ts: clerkMiddleware ─────────── Clerk
  ------------------------                         -----------------------                 --------
  React UI ─┬─ chat engine (src/client/chat) ──── Nexconn Web Chat SDK ─────────────────── Nexconn (Singapore)
            │    NCEngine, channels, handlers        websocket: messages, metadata,          ▲
@@ -123,8 +128,9 @@ Message flow when someone mentions an agent:
 ```
 src/
   app/                    routes (App Router)
-    page.tsx              landing
-    login, signup         auth pages
+    page.tsx              landing (components/marketing: live chat hero, agent roster, FAQ)
+    login, signup         Clerk <SignIn>/<SignUp> (hash routing keeps ?next= across steps)
+    icon.svg, apple-icon, opengraph-image, manifest, robots, sitemap, not-found, error, global-error
     join/[code]           invite landing and join flow
     app/                  signed-in area (layout = session guard + AppShell)
       s/[spaceId]         space
@@ -138,23 +144,26 @@ src/
   components/             UI: ui/ primitives, shell/, chat/, spaces/, agents/, auth/
   lib/
     db/                   Drizzle schema and Neon client
-    auth/                 bcrypt passwords, DB sessions
+    auth/session.ts       Clerk session -> users row (created on first visit, registered on Nexconn)
     nexconn/              signed Platform Chat API client, id generator
     ai/                   Gemini wrapper, built-in agents, runtime, research tools,
                           orchestrator (Nexconn sink, mentions, auto replies), limits
+    agent-visual.ts       per-agent hue and icon (built-ins by reserved handle, custom by id)
+    clerk-appearance.ts   Clerk components themed with the design tokens
     cards.ts              proposals, checklists, polls, live metadata
     spaces.ts, agents.ts, invites.ts, memory.ts, mirror.ts, mentions.ts, message-types.ts
 drizzle/                  SQL migrations
 e2e/                      Playwright specs (two browser contexts, real stack)
 test/                     Vitest unit tests
-scripts/                  smoke tests, probe, e2e cleanup
+scripts/                  migrate (Neon HTTP), provision-nexconn, e2e cleanup, smoke tests
 docs/screenshots/         real screenshots from production
 ```
 
 ## Data model (Neon Postgres, `src/lib/db/schema.ts`)
 
-- `users` (email unique, bcrypt hash, `nexconn_id`, cached `nexconn_token`)
-- `sessions` (sha256 of the cookie token, expiry)
+- `users` (`clerk_id` unique, email unique, `name_confirmed`, `nexconn_id`, cached `nexconn_token`;
+  `password_hash` and the `sessions` table are from the pre-Clerk login and are dropped by a
+  follow-up migration)
 - `agents` (built-in rows keyed by `builtin_key`, custom rows owned by a user; `handle`,
   `instructions`, `tools[]`, `avatar_url`, `nexconn_id`)
 - `spaces` (`nexconn_group_id`, `reply_mode`, `require_approval`), `space_members` (role,
@@ -190,7 +199,7 @@ Client, Web Chat SDK `@nexconn/chat` 26.2.1 (`src/client/chat/engine.ts`):
 Server, Platform Chat API (`src/lib/nexconn/server.ts`, signed, primary/backup domain failover):
 | Endpoint | Used for |
 | --- | --- |
-| `/v4/auth/access-token/issue` | registering people (signup) and agents (built-in and Studio) |
+| `/v4/auth/access-token/issue` | registering people (first sign-in) and agents (built-in and Studio) |
 | `/v4/user/update` | syncing names/avatars of people and agents |
 | `/v4/group-channel/create`, `join`, `leave`, `profile/update`, `dismiss` | spaces, invites, members, agents joining/leaving |
 | `/v4/group-channel/message/send` (`hasMetadata`, `metadata`, `toUserIds`, `shouldPersist: 0`) | agent cards, notices, transient agent status, private (targeted) replies |
@@ -212,7 +221,8 @@ Not used on purpose: console webhooks (one shared URL per App Key), built-in tra
   `url_context`); `tasks` -> `propose_checklist`; `polls` -> `propose_poll`; `summarize` ->
   `propose_memory`. Google Search grounding is not available on this key, and the UI never
   claims live Google search.
-- The Researcher must research first (forced function call). Sources are numbered as tools
+- The Researcher must research first (forced function call). If it answers without `[n]` markers,
+  the sources it consulted (up to three) are attached instead of none. Sources are numbered as tools
   return them; only sources cited as `[n]` in the answer are attached (Markdown footer that
   the UI renders as source chips).
 - Proposals never execute directly when the space requires approval (default). In agent DMs
@@ -222,7 +232,8 @@ Not used on purpose: console webhooks (one shared URL per App Key), built-in tra
 
 `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `BLOB_READ_WRITE_TOKEN`, `NEXCONN_APP_KEY`,
 `NEXCONN_APP_SECRET`, `NEXCONN_API_BASE`, `NEXCONN_ID_PREFIX`, `GEMINI_API_KEY`,
-`GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`, optional `SIGNUP_LIMIT_PER_HOUR`.
+`GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`,
+optional `NEXT_PUBLIC_SITE_URL`. `.env.example` lists them all.
 The App Secret and Gemini key are only read server-side. The App Key reaches the browser
 through `/api/nexconn/token`.
 
@@ -231,7 +242,8 @@ through `/api/nexconn/token`.
 ```bash
 npm install
 vercel env pull .env.local --yes        # secrets for local dev
-npm run db:migrate                      # apply drizzle/ migrations to Neon
+npm run db:migrate                      # apply drizzle/ migrations to Neon (HTTP driver, scripts/migrate.mts)
+node --conditions=react-server --env-file=.env.local --import tsx scripts/provision-nexconn.mts  # after changing Nexconn App Key
 npm run dev                             # http://localhost:3102
 npm run typecheck && npm run lint
 npm test                                # unit tests (Vitest)
@@ -246,20 +258,28 @@ Schema changes: edit `schema.ts`, then `npm run db:generate` and commit the new 
 
 ## Conventions
 
+- Auth checks live in each resource (Clerk's guidance): route handlers call `requireUser()`, the
+  `/app` layout checks the session. `proxy.ts` only adds the `?next=` redirect for `/app`.
 - Every route handler goes through `route()` (uniform JSON errors), `requireUser()`, and zod
   parsing; membership is checked with `requireMembership` (404 for non-members).
 - Nexconn ids: `${NEXCONN_ID_PREFIX}` + kind letter (`u` person, `a` agent, `g` group) + 20
   random alphanumerics.
 - Card live state lives in Nexconn message metadata with a revision number; clients keep the
   highest revision among fetched state, metadata and their own optimistic update.
-- UI: four colours only (paper `#f4f5f2`, ink `#1b2420`, viridian `#0f6b57`, signal
-  `#b3261e`) plus tints; Schibsted Grotesk; people are circles, agents are squares; lucide icons;
+- UI tokens live in `globals.css`: cool paper `#f6f7f9`, surface white, navy ink `#161a2c`, cobalt
+  action `#3554e0`, signal red `#d92d20` for errors only. Each agent has its own hue (cobalt,
+  saffron, berry, jade, iris, teal) used for its avatar, name and the cards it posts. Funnel Display
+  (headings) and Funnel Sans (UI), self-hosted in `src/app/fonts`. People are circles, agents are
+  squares; lucide icons; no gradients. Motion: one orchestrated moment per page (the landing hero
+  demo, members joining the roster), plus feedback motion; `prefers-reduced-motion` is respected.
   no gradients.
 - Commits end with the Claude co-author line; work lands through squash-merged PRs.
 
 ## Testing
 
-- Unit (`test/core-logic.test.ts`): message merge/dedupe/order, sources footer, stream summary
+- E2E sign-up uses Clerk test mode: `e2e.*+clerk_test@example.com` addresses verified with code
+  `424242`; `scripts/cleanup-e2e.mts` deletes those Clerk accounts and their app data.
+- Unit (`test/core-logic.test.ts`): message merge/dedupe/order, previews, names from email, sources footer, stream summary
   parsing, citation registry, URL safety, redirect safety, mention resolution.
 - E2E (`e2e/`), all against the real stack, two browser contexts where people interact:
   - `core.spec.ts`: signup, create space, invite a new person who signs up and joins, realtime

@@ -28,10 +28,10 @@ export function TranslateDialog({
   }
   return (
     <Dialog open={open} onClose={onClose} title="Translate message" description="The Translator replies privately. Only you will see the translation.">
-      <blockquote className="mb-4 line-clamp-3 border-l-2 border-ink/20 pl-3 text-sm text-ink/70">{preview}</blockquote>
+      <blockquote className="mb-5 line-clamp-3 rounded-control bg-paper px-3 py-2 text-sm text-ink/70">{preview}</blockquote>
       <div className="flex flex-wrap gap-1.5">
         {COMMON.map((l) => (
-          <button key={l} type="button" disabled={busy} onClick={() => go(l)} className="rounded-full border border-ink/15 px-3 py-1 text-sm hover:border-accent hover:text-accent">
+          <button key={l} type="button" disabled={busy} onClick={() => go(l)} className="rounded-full border border-ink/12 px-3 py-1.5 text-sm font-medium transition-colors hover:border-accent hover:bg-accent/5 hover:text-accent disabled:opacity-50">
             {l}
           </button>
         ))}
