@@ -158,6 +158,20 @@ export function ChatView(props: ChatViewProps) {
     if (stick.current) el.scrollTop = el.scrollHeight;
   }, [channel.messages, channel.loading]);
 
+  // Content can grow without the message list changing (fonts loading, a streamed reply or a
+  // card filling in). Stay pinned to the newest message unless the reader scrolled up.
+  const list = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const el = list.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const sc = scroller.current;
+      if (sc && stick.current && prevHeight.current === null) sc.scrollTop = sc.scrollHeight;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const onScroll = () => {
     const el = scroller.current;
     if (!el) return;
@@ -243,7 +257,7 @@ export function ChatView(props: ChatViewProps) {
         ) : channel.loaded && messages.length === 0 ? (
           <div className="px-6 py-12">{props.empty}</div>
         ) : null}
-        <ol className="pb-4" aria-label="Messages">
+        <ol ref={list} className="pb-4" aria-label="Messages">
           {messages.map((m, i) => {
             const prev = messages[i - 1];
             const newDay = !prev || new Date(prev.sentTime).toDateString() !== new Date(m.sentTime).toDateString();

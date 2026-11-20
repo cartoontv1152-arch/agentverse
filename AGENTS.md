@@ -294,7 +294,9 @@ Schema changes: edit `schema.ts`, then `npm run db:generate` and commit the new 
 
 - The Web SDK did not push `RC:StreamMsg` to group members in realtime in our tests, so clients
   pull streams (see message flow). Replies therefore arrive in a few larger steps rather than
-  token by token; the final text always arrives through the stream summary metadata.
+  token by token. `RC_Ext_StreamMsgSummary` is only a preview (about 500 characters) and its
+  `complete` flag can stay false after the stream ends, so `loadOlder` pulls every unfinished-looking
+  stream with `requestStreamMessage` regardless of age (the caret shows only for recent ones).
 - Private replies (catch-up, Translate menu) are targeted group messages. Nexconn does not keep
   targeted messages in history unless "Targeted group cloud retention" is enabled in the
   console, so they disappear after a reload.

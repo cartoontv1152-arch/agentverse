@@ -546,10 +546,12 @@ export async function loadOlder(channelKey: string, fresh = false) {
     .filter((m) => !TRANSIENT_TYPES.has(m.messageType))
     .map((raw) => {
       const m = toChatMessage(raw);
-      // A stream still open in history: fetch the rest if it is recent, otherwise show as is.
+      // Nexconn's stream summary metadata is a preview (about 500 characters) and can still read
+      // "incomplete" after the stream finished, so always pull the full content. Only recent
+      // streams show the writing caret while it arrives.
       if (m.type === MSG.STREAM && m.streaming) {
-        if (now - m.sentTime < 3 * 60 * 1000) void raw.requestStreamMessage().catch(() => undefined);
-        else m.streaming = false;
+        void raw.requestStreamMessage().catch(() => undefined);
+        if (now - m.sentTime >= 3 * 60 * 1000) m.streaming = false;
       }
       return m;
     });
