@@ -413,14 +413,35 @@ The November 2026 release (see [CHANGELOG.md](CHANGELOG.md) for details):
 ## Project layout
 
 ```
-src/app/            routes: landing, login/signup (Clerk), join/[code], app/ (signed-in area), api/
-src/components/     marketing/ (landing), shell/, chat/, spaces/, agents/, auth/, ui/
-src/client/         API helper, app data context, Nexconn chat engine and store
-src/lib/            nexconn/ (Platform API client), ai/ (Gemini runtime, agents, research), auth/,
-                    db/ (Drizzle schema), cards, spaces, invites, memory
-drizzle/            SQL migrations
-scripts/            migrate, provision-nexconn, cleanup-e2e, smoke tests
-e2e/, test/         Playwright and Vitest
+src/
+  app/
+    page.tsx              landing page
+    login/, signup/       Clerk sign-in and sign-up
+    join/[code]/          invite landing and join
+    app/                  signed-in area: home, s/[spaceId], dm/[userId], agent/[agentId],
+                          agents, studio/new, studio/[agentId], settings
+    api/                  route handlers (auth, spaces, invites, cards, memory, agents, uploads)
+    icon.svg, favicon.ico, apple-icon.tsx, opengraph-image.tsx, manifest.ts, robots.ts,
+    sitemap.ts, not-found.tsx, error.tsx, global-error.tsx, fonts/
+  proxy.ts                Clerk middleware and the ?next= redirect for /app
+  components/
+    marketing/            landing: hero demo, agent roster, features, Nexconn section, FAQ
+    shell/                sidebar, page header, connection banner, welcome dialog
+    chat/                 chat view, message rows, composer, cards, Markdown
+    spaces/, agents/      space view and panel, dialogs, gallery, Studio, agent DMs
+    auth/, ui/            Clerk forms and layout; buttons, fields, dialogs, toasts, avatar, logo
+  client/                 API helper, app data context, Nexconn chat engine and store
+  lib/
+    nexconn/              signed Platform Chat API client, id generator
+    ai/                   Gemini wrapper, built-in agents, runtime, research tools, orchestrator
+    auth/session.ts       Clerk session to app profile
+    db/                   Drizzle schema and Neon client
+    agent-visual.ts       agent hues and icons
+    cards.ts, spaces.ts, invites.ts, memory.ts, mirror.ts, message-types.ts
+drizzle/                  SQL migrations
+scripts/                  migrate, provision-nexconn, cleanup-e2e, smoke tests
+e2e/, test/               Playwright and Vitest
+docs/screenshots/         images used in this README
 ```
 
 See [AGENTS.md](AGENTS.md) for the engineering guide: architecture, data model, conventions and
