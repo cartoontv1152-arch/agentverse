@@ -11,7 +11,10 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.mts"
+    "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.mts",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "nexconn:provision": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/provision-nexconn.mts",
+    "e2e:cleanup": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/cleanup-e2e.mts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.10.5",
