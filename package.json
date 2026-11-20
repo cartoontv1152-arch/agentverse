@@ -11,9 +11,10 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.mts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.10.5",
     "@google/genai": "^3.6.0",
     "@neondatabase/serverless": "^1.2.1",
     "@nexconn/chat": "26.2.1",

@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Hash, Home, LogOut, MessageSquarePlus, Plus, Settings, Sparkles, Bot } from "lucide-react";
 import { useAppData } from "@/client/app-data";
 import { useChat } from "@/client/chat/store";
 import { stopChat } from "@/client/chat/engine";
-import { api } from "@/client/api";
+import { useClerk } from "@clerk/nextjs";
 import { Avatar } from "@/components/ui/avatar";
 import { IconButton } from "@/components/ui/button";
 import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog";
@@ -50,7 +50,6 @@ export function Sidebar() {
   const summaries = useChat((s) => s.summaries);
   const connection = useChat((s) => s.connection);
   const pathname = usePathname();
-  const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [composing, setComposing] = useState(false);
 
@@ -67,10 +66,10 @@ export function Sidebar() {
   const people = directKeys.filter((id) => profiles[id]?.kind === "user" && id !== me.nexconnId);
   const agentChats = directKeys.filter((id) => profiles[id]?.kind === "agent");
 
+  const { signOut } = useClerk();
   async function logout() {
-    await api("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     await stopChat().catch(() => undefined);
-    router.replace("/login");
+    await signOut({ redirectUrl: "/login" });
   }
 
   const statusTone = connection === "connected" ? "bg-accent" : connection === "connecting" || connection === "idle" ? "bg-ink/30" : "bg-signal";

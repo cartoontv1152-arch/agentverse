@@ -1,59 +1,80 @@
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
-import { cookies } from "next/headers";
-import { and, eq, gt } from "drizzle-orm";
+import { auth, currentUser, type User as ClerkUser } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import type { User } from "@/lib/db/schema";
+import { newNexconnId } from "@/lib/nexconn/ids";
+import { issueAccessToken } from "@/lib/nexconn/server";
 
-export const SESSION_COOKIE = "agv_session";
-const SESSION_DAYS = 30;
-
-function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-/** Creates a DB-backed session and sets the httpOnly cookie. */
-export async function createSession(userId: string): Promise<void> {
-  const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  await getDb().insert(schema.sessions).values({ userId, tokenHash: hashToken(token), expiresAt });
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
-}
-
-export async function destroySession(): Promise<void> {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
-  if (token) {
-    await getDb().delete(schema.sessions).where(eq(schema.sessions.tokenHash, hashToken(token)));
-  }
-  jar.delete(SESSION_COOKIE);
-}
+/**
+ * Sessions are owned by Clerk (sign-up, sign-in, verification, password resets, Google).
+ * Each Clerk user maps to one row in `users`, which holds the app profile and the person's
+ * Nexconn identity. The row is created the first time a signed-in person reaches the app.
+ */
 
 export type SessionUser = Pick<User, "id" | "email" | "name" | "avatarUrl" | "nexconnId">;
 
-/** Returns the signed-in user for the current request, or null. */
+const columns = {
+  id: schema.users.id,
+  email: schema.users.email,
+  name: schema.users.name,
+  avatarUrl: schema.users.avatarUrl,
+  nexconnId: schema.users.nexconnId,
+};
+
+/** The Clerk user id for this request, or null when signed out. */
+export async function getClerkUserId(): Promise<string | null> {
+  const { userId } = await auth();
+  return userId;
+}
+
+/** Returns the signed-in user for the current request (creating their app profile on first visit), or null. */
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  const rows = await getDb()
-    .select({
-      id: schema.users.id,
-      email: schema.users.email,
-      name: schema.users.name,
-      avatarUrl: schema.users.avatarUrl,
-      nexconnId: schema.users.nexconnId,
-    })
-    .from(schema.sessions)
-    .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
-    .where(and(eq(schema.sessions.tokenHash, hashToken(token)), gt(schema.sessions.expiresAt, new Date())))
-    .limit(1);
-  return rows[0] ?? null;
+  const clerkId = await getClerkUserId();
+  if (!clerkId) return null;
+  const [row] = await getDb().select(columns).from(schema.users).where(eq(schema.users.clerkId, clerkId)).limit(1);
+  return row ?? provisionUser(clerkId);
+}
+
+function displayName(user: ClerkUser, email: string): string {
+  const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return (full || user.username || email.split("@")[0]).slice(0, 60);
+}
+
+async function provisionUser(clerkId: string): Promise<SessionUser | null> {
+  const clerkUser = await currentUser();
+  if (!clerkUser || clerkUser.id !== clerkId) return null;
+  const primary = clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId) ?? clerkUser.emailAddresses[0];
+  if (!primary) return null;
+  const email = primary.emailAddress.trim().toLowerCase();
+  const db = getDb();
+
+  // Clerk verified this address, so an existing profile with the same email (an account from
+  // before Clerk, or a Clerk account that was deleted and recreated) belongs to this person.
+  if (primary.verification?.status === "verified") {
+    const [linked] = await db.update(schema.users).set({ clerkId }).where(eq(schema.users.email, email)).returning(columns);
+    if (linked) return linked;
+  }
+
+  const name = displayName(clerkUser, email);
+  const avatarUrl = clerkUser.hasImage ? clerkUser.imageUrl : null;
+  const nexconnId = newNexconnId("u");
+  const [created] = await db
+    .insert(schema.users)
+    .values({ clerkId, email, name, avatarUrl, nexconnId })
+    .onConflictDoNothing()
+    .returning(columns);
+  if (!created) {
+    // A concurrent request for the same person won the insert.
+    const [row] = await db.select(columns).from(schema.users).where(eq(schema.users.clerkId, clerkId)).limit(1);
+    return row ?? null;
+  }
+  // Register the person on Nexconn now; /api/nexconn/token retries later if this fails.
+  try {
+    const token = await issueAccessToken(nexconnId, name, avatarUrl);
+    await db.update(schema.users).set({ nexconnToken: token }).where(eq(schema.users.id, created.id));
+  } catch (err) {
+    console.warn("[auth] Nexconn registration deferred", err);
+  }
+  return created;
 }

@@ -33,7 +33,7 @@ export async function api<T>(url: string, init?: RequestInit & { json?: unknown 
     | null;
   if (!res.ok) {
     const err = data && "error" in data && data.error ? data.error : null;
-    if (res.status === 401 && typeof window !== "undefined" && !url.startsWith("/api/auth/")) {
+    if (res.status === 401 && typeof window !== "undefined") {
       const next = encodeURIComponent(window.location.pathname + window.location.search);
       // Full navigation on purpose: the session is gone, so reset all client state.
       window.location.href = `/login?next=${next}`;
