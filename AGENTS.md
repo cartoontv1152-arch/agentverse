@@ -241,14 +241,13 @@ through `/api/nexconn/token`.
 npm install
 vercel env pull .env.local --yes        # secrets for local dev
 npm run db:migrate                      # apply drizzle/ migrations to Neon (HTTP driver, scripts/migrate.mts)
-node --conditions=react-server --env-file=.env.local --import tsx scripts/provision-nexconn.mts  # after changing Nexconn App Key
+npm run nexconn:provision               # after changing Nexconn App Key (-- --dry-run to preview)
 npm run dev                             # http://localhost:3102
-npm run typecheck && npm run lint
-npm test                                # unit tests (Vitest)
+npm run check                           # typecheck + lint + unit tests (Vitest)
 npx playwright test                     # e2e against local dev
 E2E_BASE_URL=https://agentverse-nu-murex.vercel.app npx playwright test   # e2e against production
-SCREENSHOTS=1 E2E_BASE_URL=... npx playwright test e2e/screenshots.spec.ts  # docs screenshots
-node --conditions=react-server --env-file=.env.local --import tsx scripts/cleanup-e2e.mts  # remove e2e accounts
+SCREENSHOTS=1 E2E_BASE_URL=... npx playwright test e2e/screenshots.spec.ts  # README screenshots in docs/screenshots
+npm run e2e:cleanup                     # remove e2e accounts (Clerk + database)
 vercel deploy --prod                    # production deploy (remote build)
 ```
 If Playwright's bundled Chromium isn't downloaded, set `PW_CHROMIUM_PATH` to any Chromium.
@@ -277,7 +276,7 @@ Schema changes: edit `schema.ts`, then `npm run db:generate` and commit the new 
 
 - E2E sign-up uses Clerk test mode: `e2e.*+clerk_test@example.com` addresses verified with code
   `424242`; `scripts/cleanup-e2e.mts` deletes those Clerk accounts and their app data.
-- Unit (`test/core-logic.test.ts`): message merge/dedupe/order, previews, names from email, sources footer, stream summary
+- Unit (`test/core-logic.test.ts`): message merge/dedupe/order, previews, names from email, agent visuals, sources footer, stream summary
   parsing, citation registry, URL safety, redirect safety, mention resolution.
 - E2E (`e2e/`), all against the real stack, two browser contexts where people interact:
   - `core.spec.ts`: signup, create space, invite a new person who signs up and joins, realtime
@@ -287,6 +286,10 @@ Schema changes: edit `schema.ts`, then `npm run db:generate` and commit the new 
     memory, private translation from the message menu, private DM with an agent.
   - `studio.spec.ts`: build a custom agent with an uploaded avatar, run the test console, add
     it to a space and mention it.
+
+## Releases
+
+`CHANGELOG.md` records each release; add an entry with user-facing wording when you ship.
 
 ## Known limitations
 
