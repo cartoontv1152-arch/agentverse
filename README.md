@@ -324,8 +324,22 @@ People, agents and group channels live on one Nexconn App Key. After changing `N
 `NEXCONN_APP_SECRET`, register everything on the new app (safe to run more than once):
 
 ```bash
-node --conditions=react-server --env-file=.env.local --import tsx scripts/provision-nexconn.mts
+npm run nexconn:provision -- --dry-run   # counts what would be registered
+npm run nexconn:provision                # registers agents, people and group channels
 ```
+
+## Deploy
+
+AgentVerse deploys to Vercel (functions in `sin1`, next to Nexconn's Singapore data center).
+
+1. Add every variable from `.env.example` to the Vercel project for Production, Preview and
+   Development (`vercel env add NAME production`). Server secrets can be marked sensitive.
+2. Apply migrations to the production database: `npm run db:migrate`.
+3. Deploy: `vercel deploy --prod` (remote build).
+4. If the Nexconn App Key changed, run `npm run nexconn:provision` once.
+
+Schema changes follow expand then contract: ship additive migrations first, deploy, and drop old
+columns only in a later release once no running code reads them.
 
 ## Tests
 
